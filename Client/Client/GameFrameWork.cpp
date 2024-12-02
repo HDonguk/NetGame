@@ -15,18 +15,20 @@ extern HFONT hFont;
 std::vector<Enemy*> enemies;
 
 
+// 기본 생성자 구현
 GameFramework::GameFramework()
     : m_hdcBackBuffer(nullptr),
     m_hBitmap(nullptr), m_hOldBitmap(nullptr),
     player(nullptr), camera(nullptr),
     showClickImage(false), clickImageTimer(0.0f),
-    enemySpawnTimer(0.0f), bigBoomerSpawnTimer(0.0f), lampreySpawnTimer(0.0f),  yogSpawnTimer(0.0f),
+    enemySpawnTimer(0.0f), bigBoomerSpawnTimer(0.0f), lampreySpawnTimer(0.0f), yogSpawnTimer(0.0f),
     currentGun(&revolver),
     frameTime(0.0f), gameTimeSeconds(0),
     isPaused(false),
-    isShowingUpgradePanel(false), 
+    isShowingUpgradePanel(false),
     isMainMenu(true), menuAnimationFrame(0), menuAnimationAccumulator(0.0f), selectedMenuItem(0),
-    isMainMenuMusicPlaying(false){// isBackgroundMusicPlaying(false) {
+    isMainMenuMusicPlaying(false) {
+
     Clear();
 
     mapImage.Load(L"./resources/background/background.png");
@@ -35,8 +37,9 @@ GameFramework::GameFramework()
     int mapWidth = mapImage.GetWidth();
     int mapHeight = mapImage.GetHeight();
 
-    //player = new Player(playerID,mapWidth / 2.0f, mapHeight / 2.0f, 2.0f, 0.2f, this); // gameFramework 포인터 전달
-    // xPos, yPos, speed, animationSpeed, gameframeworkPtr
+    // 기본 플레이어 생성 (기본 생성자 사용 시 위치는 기본값으로 설정)
+    player = new Player(0, mapWidth / 2.0f, mapHeight / 2.0f, 2.0f, 0.2f, this);
+
     player->SetBounds(mapWidth, mapHeight);
 
     camera = new Camera(800, 600);
@@ -55,8 +58,15 @@ GameFramework::GameFramework()
     menuImages[0].Load(L"./resources/background/Title_0.png");
     menuImages[1].Load(L"./resources/background/Title_1.png");
     menuImages[2].Load(L"./resources/background/Title_2.png");
+}
 
-    
+// 기존의 인자를 받는 생성자 구현
+GameFramework::GameFramework(const s_playerPacket& playerPacket)
+    : GameFramework() {  // 기본 생성자를 먼저 호출하여 초기화한 후 추가로 작업
+    player->SetID(playerPacket.id);
+    player->SetPosition(playerPacket.x, playerPacket.y);
+    player->SetSpeed(playerPacket.speed);
+    player->SetAnimationSpeed(playerPacket.animationSpeed);
 }
 
 HFONT hFont = nullptr;
@@ -510,7 +520,7 @@ void GameFramework::Update(float frameTime) {
     // f9치트키
     HandleCheatKeys();
 
-   
+  
     // 플레이어 업데이트
     player->Update();
     camera->Update(player->GetX(), player->GetY());
@@ -1246,3 +1256,22 @@ void  GameFramework::receiveResult(SOCKET s)
     retval = recv(s, (char*)&UIPacket, sizeof(UIPacket), 0);
     if (retval == SOCKET_ERROR) err_display("receive - UIPacket");
 }
+void GameFramework::UpdateFromServer(const s_playerPacket& playerPacket) {
+    if (player == nullptr) {
+        // 서버에서 처음 수신한 플레이어 상태를 바탕으로 Player 객체 생성
+        player = new Player(playerPacket.id, playerPacket.x, playerPacket.y,
+            playerPacket.speed, playerPacket.animationSpeed, this);
+    }
+    else {
+        // 기존 플레이어 객체의 상태를 갱신
+        player->SetID(playerPacket.id);
+        player->SetPosition(playerPacket.x, playerPacket.y);
+        player->SetSpeed(playerPacket.speed);
+        player->SetAnimationSpeed(playerPacket.animationSpeed);
+    }
+
+  
+}
+
+
+

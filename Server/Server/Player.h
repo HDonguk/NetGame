@@ -11,7 +11,7 @@ class GameFramework;
 
 class Player {
 public:
-    Player(int id,float x, float y, float speed, float animationSpeed, GameFramework* gameFramework);
+    Player(int id,float x, float y, float speed, float animationSpeed);
     ~Player();
 
     void Update(float frameTime, const c_inputPacket& input, const std::vector<Obstacle*>& obstacles);

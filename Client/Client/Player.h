@@ -23,6 +23,12 @@ public:
 
     // 서버로부터 상태 수신
     void ReceiveStateFromServer();
+    void updateFromServer();
+
+    void SetID(int  playerID);
+    void SetPosition(float x, float y);
+    void SetSpeed(float speed);
+    void SetAnimationSpeed(float AnimationSpeed);
 
     void Update(float frameTime, const std::vector<Obstacle*>& obstacles);
     void Move(float dx, float dy, const std::vector<Obstacle*>& obstacles);

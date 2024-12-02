@@ -6,7 +6,7 @@
 
 extern HFONT hFont;
 
-Player::Player(int id,float x, float y, float speed, float animationSpeed, GameFramework* gameFramework)
+Player::Player(int id,float x, float y, float speed, float animationSpeed)
     : playerID(id),x(x), y(y), speed(speed), animationSpeed(animationSpeed), currentFrame(0), frameTimeAccumulator(0.0f),
     moveLeft(false), moveRight(false), moveUp(false), moveDown(false), isMoving(false),
     boundWidth(0), boundHeight(0), directionLeft(false),
@@ -29,15 +29,11 @@ void Player::ProcessInput(const c_inputPacket& input) {
 
 s_playerPacket Player::GenerateStatePacket() const {
     s_playerPacket packet;
-    packet.s_playerName = name;
-    packet.s_playerID = id;
-    packet.s_playerPosX = x;
-    packet.s_playerPosY = y;
-    packet.s_playerSpeed = speed;
-    packet.s_playerHealth = health;
-    packet.s_playerLevel = 1; // 임시 값
-    packet.s_playerEXP = 0;   // 임시 값
-    packet.s_isPlayerDead = (health <= 0);
+    packet.id = id;
+    packet.x = x;
+    packet.x = y;
+    packet.speed = speed;
+    packet.animationSpeed = animationSpeed;
     return packet;
 }
 

@@ -13,6 +13,7 @@
 #include <list>
 #include"Client.h"
 #include "GameThread.h"
+#include "GameFrameWork.h"
 #define SERVERPORT 9000
 #define BUFSIZE    512
 
@@ -255,16 +256,16 @@ DWORD WINAPI gameThread(LPVOID arg) {
 	// 매칭 완료 후 게임 시작 이벤트 설정
 	SetEvent(hGameStartEvent);
 	std::cout << "gameThread start" << std::endl;
+	// 서버에서 맵 크기를 직접 설정
+	int mapWidth = 1024;  // 맵의 가로 크기 (클라이언트와 일치해야 함)
+	int mapHeight = 768;  // 맵의 세로 크기 (클라이언트와 일치해야 함)
 
-	
-
+	// 플레이어 객체 생성
+	Player newPlayer(client.ID, mapWidth / 2.0f, mapHeight / 2.0f, 2.0f, 0.2f); // 맵의 중앙에 위치
 	// GameThread 객체 생성 및 게임 실행
 	GameThread game;  // GameThread 객체 생성
 	std::cout << "기본 GameThread 생성자 호출" << std::endl;
 	//Player::Player(int id, float x = 0.0f, float y = 0.0f, float speed = 1.0f, float animationSpeed = 1.0f, GameFramework * gameFramework = nullptr);
-
-	// matchedClient를 사용해 플레이어 추가
-	Player newPlayer(client.ID, 0.0f, 0.0f, 1.0f, 1.0f, nullptr); // 새로운 플레이어 객체 생성 (matchedClient의 ID 사용)
 	game.addPlayer(newPlayer);          // GameThread에 플레이어 추가
 
 	game.run();       // 게임 실행

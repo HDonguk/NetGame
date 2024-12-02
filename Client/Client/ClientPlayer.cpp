@@ -25,6 +25,8 @@ void Player::Update() {
 
     // 서버로부터 갱신된 상태를 수신
     ReceiveStateFromServer();
+    updateFromServer();
+
 }
 
 
@@ -229,18 +231,7 @@ void Player::SendInputToServer(const std::string& input) {
     }
 }
 */
-void Player::ReceiveStateFromServer() {
-    s_playerPacket packet;
-    int retval = recv(serverSocket, (char*)&packet, sizeof(packet), 0);
-    if (retval > 0) {
-        x = packet.s_playerPosX;
-        y = packet.s_playerPosY;
-        health = packet.s_playerHealth;
-    }
-    else if (retval == SOCKET_ERROR) {
-        std::cerr << "Failed to receive state from server. Error: " << WSAGetLastError() << std::endl;
-    }
-}
+
 
 void Player::SetDirectionLeft(bool isLeft) {
     directionLeft = isLeft;
@@ -318,4 +309,56 @@ void Player::sendInputToServer() {
             << " moveUp=" << inputPacket.moveUp
             << " moveDown=" << inputPacket.moveDown << std::endl;
     }
+}
+void Player::updateFromServer() {
+    char buffer[1024];
+    int retval = recv(serverSocket, buffer, sizeof(buffer), 0);
+
+    if (retval > 0) {
+        // 서버에서 수신한 패킷 처리
+        const s_playerPacket* playerPacket = reinterpret_cast<const s_playerPacket*>(buffer);
+        // 플레이어 상태 업데이트
+        SetID(playerPacket->id);
+        SetPosition(playerPacket->x, playerPacket->y);
+        SetSpeed(playerPacket->speed);
+        SetAnimationSpeed(playerPacket->animationSpeed);
+        // GameFramework의 메서드를 호출하여 플레이어 상태를 업데이트합니다.
+        if (gameFramework) {
+            gameFramework->UpdateFromServer(*playerPacket);
+        }
+    }
+    else if (retval == SOCKET_ERROR) {
+        std::cerr << "Failed to receive data from server. Error: " << WSAGetLastError() << std::endl;
+    }
+}
+
+
+void Player::ReceiveStateFromServer() {
+    s_playerPacket packet;
+    int retval = recv(serverSocket, (char*)&packet, sizeof(packet), 0);
+    if (retval > 0) {
+        playerID = packet.id;
+        x = packet.x;
+        y = packet.y;
+        speed = packet.speed;
+        animationSpeed = packet.animationSpeed;
+    }
+    else if (retval == SOCKET_ERROR) {
+        std::cerr << "Failed to receive state from server. Error: " << WSAGetLastError() << std::endl;
+    }
+}
+
+void Player::SetID(int  playerID) {
+    this->playerID = playerID;
+
+}
+void Player::SetPosition(float x, float y) {
+    this->x = x;
+    this->y = y;
+}
+void Player::SetSpeed(float speed) {
+    this->speed = speed;
+}
+void Player::SetAnimationSpeed(float AnimationSpeed) {
+    this->animationSpeed = animationSpeed;
 }

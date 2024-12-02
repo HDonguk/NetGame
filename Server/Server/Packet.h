@@ -83,6 +83,7 @@ struct s_UIPacket
 	}
 };
 
+/*
 struct s_playerPacket
 {
 	string s_playerName;
@@ -94,14 +95,26 @@ struct s_playerPacket
 	unsigned short s_playerLevel;
 	int s_playerEXP;
 	bool s_isPlayerDead;
+};*/
+struct s_playerPacket
+{
+	string c_playerName;
+	int id;
+	float x;
+	float y;
+	float speed;
+	float animationSpeed;
 };
+
 
 struct c_playerPacket
 {
 	string c_playerName;
-	unsigned short c_playerID;
-	float c_playerPosX;
-	float c_playerPosY;
+	int id;
+	float x;
+	float y; 
+	float speed; 
+	float animationSpeed;
 };
 
 struct c_bulletPacket
