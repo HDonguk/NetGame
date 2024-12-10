@@ -21,13 +21,10 @@ public:
     void run();  // 게임 루프를 실행
     void stop(); // 게임 루프를 종료
 
+    void updatePlayerStatus();
+    bool CheckCollision(const Player& player);
 private:
-    void collectEvents();  // 클라이언트 이벤트 수집
-    void sortEventsByFrame(); // 이벤트를 프레임 기준으로 정렬
-    void processEvent(const Event& event); // 수집된 이벤트 처리
-    void updateGameObjects();  // 게임 객체 업데이트
-    void checkCollisions(); // 충돌 감지 및 처리
-    void sendUpdatedStateToClients(); // 클라이언트로 상태 전송
+    
     void waitUntilNextFrame(const std::chrono::time_point<std::chrono::steady_clock>& frameStartTime); // 프레임 간 동기화
 
     bool gameRunning; // 게임 루프 실행 여부

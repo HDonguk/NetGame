@@ -6,8 +6,8 @@
 #include "stdafx.h"
 #include  "list"
 #include "Client.h"
-extern list<c_inputPacket> sharedInputList; // 전역으로 한번 써보기
-extern list<Client> waitClientList; // 클라이언트 리스트 전역 변수 정의
+std::vector<PlayerStatusPacket> PlayerStatus;  // 서버 패킷 리스트 선언
+
 extern CRITICAL_SECTION cs;         // Critical Section 전역 변수 정의
 // 30FPS 기준
 #define FRAME_TIME 0.033f
@@ -35,122 +35,62 @@ void GameThread::run() {
     //1. updateEnemys
     //2. updateBullet
     //3. collisionAction
-    //4. updatePlayerStatus
-        //cout << "updateGameObjects()" << endl;
-        // 3. 게임 객체 업데이트
-       // updateGameObjects();
+       updatePlayerStatus();
 
-        // 4. 충돌 감지
-        //checkCollisions();
 
-        // 5. 클라이언트 상태 동기화
-        sendUpdatedStateToClients();
-
-        // 6. 프레임 간 동기화
+   
         waitUntilNextFrame(frameStartTime);
     }
 }
 
-void GameThread::stop() {
-    gameRunning = false;
-}
+void GameThread::updatePlayerStatus() {
+    EnterCriticalSection(&cs); // 공유 자원 접근 동기화
 
-void GameThread::collectEvents() {
-    // 클라이언트로부터 이벤트 수집
-    // 각 클라이언트에서 받은 패킷을 이벤트 큐에 추가
-}
+    // 플레이어 상태 업데이트 및 충돌 체크
+    for (auto& player : players) {
+        // 클라이언트로부터 받은 상태 정보로 위치 업데이트
+        PlayerStatusPacket clientStatus = player.GetReceivedStatus();
+        float newX = clientStatus.posX;
+        float newY = clientStatus.posY;
 
-void GameThread::sortEventsByFrame() {
-    // 이벤트 큐를 타임스탬프 또는 프레임 기준으로 정렬
-}
-
-/*
-void GameThread::processEvent(const Event& event) {
-    switch (event.type) {
-    case EventType::PlayerMove:
-        for (auto& player : players) {
-            if (player.GetID() == event.playerID) {
-                player.ProcessInput(event.inputData); // 입력 처리
+        // 다른 플레이어 리스트 생성 (현재 플레이어 제외)
+        std::vector<Player*> otherPlayers;
+        for (auto& other : players) {
+            if (&player != &other) { // 자기 자신 제외
+                otherPlayers.push_back(&other);
             }
         }
-        break;
 
-    case EventType::FireBullet:
-        bullets.emplace_back(event.bulletData.startX, event.bulletData.startY,
-            event.bulletData.targetX, event.bulletData.targetY,
-            event.bulletData.damage, event.bulletData.speed);
-        break;
-
-        // 추가 이벤트 처리 가능
-    }
-}
-*/
-void GameThread::updateGameObjects() {
-    EnterCriticalSection(&cs);
-    if (!sharedInputList.empty()) {
-        // 공유 입력 리스트에서 입력 패킷 가져오기
-        c_inputPacket inputPacket = sharedInputList.front();
-        sharedInputList.pop_front();  // 가져온 입력 패킷 제거
-        LeaveCriticalSection(&cs);
-
-        // 각 플레이어 오브젝트 업데이트
-        for (auto& player : players) {
-            // 플레이어 입력을 반영한 업데이트
-            player.Update(FRAME_TIME, obstacles);
-
-            // 디버깅 로그
-            //std::cout << "게임 로직 처리: moveLeft=" << inputPacket.moveLeft
-              //  << ", moveRight=" << inputPacket.moveRight
-               // << ", moveUp=" << inputPacket.moveUp
-               // << ", moveDown=" << inputPacket.moveDown << std::endl;
+        // 충돌 체크
+        bool collision = player.CheckCollision(newX, newY, obstacles, otherPlayers);
+        if (!collision) {
+            // 충돌이 없으면 위치 업데이트
+            player.SetPosition(newX, newY);
         }
-    }
-    else {
-        std::cerr << "Warning: sharedInputList is empty!" << std::endl;
-        LeaveCriticalSection(&cs);
-    }
-
-
-    for (auto& enemy : enemies) {
-     //   enemy.Update(FRAME_TIME);
-    }
-
-    for (auto& bullet : bullets) {
-    //   bullet.Update(FRAME_TIME);
-    }
-}
-/*
-void GameThread::checkCollisions() {
-    for (auto& bullet : bullets) {
-        for (auto& enemy : enemies) {
-            if (bullet.CheckCollision(enemy.GetX(), enemy.GetY(), enemy.GetWidth(), enemy.GetHeight())) {
-                enemy.TakeDamage(bullet.getDamage());
-                bullet.SetInactive();
-            }
+        else {
+            // 충돌이 있으면 예외 처리 (예: 위치 롤백, 데미지 적용 등)
+            player.TakeDamage(1);
         }
-    }
-}
-*/
-void GameThread::sendUpdatedStateToClients() {
-    for (const auto& player : players) {
-        s_playerPacket playerPacket = player.GenerateStatePacket();
-        send(serverSocket, reinterpret_cast<char*>(&playerPacket), sizeof(playerPacket), 0);
+
+        // 플레이어 상태 업데이트
+        player.SetHealth(clientStatus.health);
+
+        // 업데이트된 상태를 동기화할 패킷 생성
+        PlayerStatusPacket updatedStatus;
+        updatedStatus.playerId = player.GetID();
+        updatedStatus.posX = player.GetX();
+        updatedStatus.posY = player.GetY();
+        updatedStatus.health = player.GetHealth();
+
+        // 서버 패킷 리스트에 추가 (클라이언트로 전송 준비)
+        PlayerStatus.push_back(updatedStatus);
     }
 
-    /*
-    for (const auto& bullet : bullets) {
-        if (!bullet.IsInactive()) {
-            s_bulletPacket bulletPacket = bullet.GenerateStatePacket();
-            send(serverSocket, reinterpret_cast<char*>(&bulletPacket), sizeof(bulletPacket), 0);
-        }
-    }
-
-    for (const auto& enemy : enemies) {
-        s_enemyPacket enemyPacket = enemy.GenerateStatePacket();
-        send(serverSocket, reinterpret_cast<char*>(&enemyPacket), sizeof(enemyPacket), 0);
-    }
-    */
+    LeaveCriticalSection(&cs); // 동기화 종료
 }
+
+
+
 
 
 void GameThread::waitUntilNextFrame(const std::chrono::time_point<std::chrono::steady_clock>& frameStartTime) {
@@ -160,4 +100,7 @@ void GameThread::waitUntilNextFrame(const std::chrono::time_point<std::chrono::s
     if (elapsed.count() < FRAME_TIME) {
         std::this_thread::sleep_for(std::chrono::duration<float>(FRAME_TIME - elapsed.count()));
     }
+}
+void GameThread::stop() {
+    gameRunning = false;
 }
