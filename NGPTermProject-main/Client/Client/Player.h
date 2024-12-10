@@ -13,22 +13,16 @@ class GameFramework;
 
 class Player {
 public:
-    Player(int playerID, float x, float y, float speed, float animationSpeed, GameFramework* gameFramework);
+    Player(float x, float y, float speed, float animationSpeed, GameFramework* gameFramework);
     ~Player();
 
     //ClientPlayer(SOCKET serverSocket, float x, float y, float speed, int maxHealth);
-    void Update();
+    void Update(SOCKET s);
     // 서버로 입력 전송
-    void SendInputToServer(const std::string& input);
+    void sendInputToServer(SOCKET s);
 
     // 서버로부터 상태 수신
-    void ReceiveStateFromServer();
-    void updateFromServer();
-
-    void SetID(int  playerID);
-    void SetPosition(float x, float y);
-    void SetSpeed(float speed);
-    void SetAnimationSpeed(float AnimationSpeed);
+    void ReceiveStateFromServer(SOCKET s);
 
     void Update(float frameTime, const std::vector<Obstacle*>& obstacles);
     void Move(float dx, float dy, const std::vector<Obstacle*>& obstacles);
@@ -53,7 +47,6 @@ public:
 
     void ApplyUpgrade(const std::wstring& upgrade);
 
-    int playerID;
     float x, y;
     float speed;
     float animationSpeed;
@@ -97,7 +90,7 @@ public:
     bool IsInvincible() const;
     void UpdateInvincibility(float frameTime);
 
-    void sendInputToServer();
+    //void sendInputToServer();
 
     GameFramework* gameFramework;
     SOCKET serverSocket; // 서버와 연결된 소켓

@@ -41,19 +41,26 @@ HANDLE hDialogEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 Client client;
 
+// 통신용 스레드 분리
+DWORD WINAPI clientThread(LPVOID arg)
+{
+    gameframework.getPlayer()->Update((SOCKET)arg);
+    return 0;
+}
 
 
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
+    // 윈속 초기화
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+        return 1;
+
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     MyRegisterClass(hInstance);
 
-    if (!InitInstance(hInstance, nCmdShow))
-    {
-        return FALSE;
-    }
 
     MSG msg;
     DWORD frameStartTime{};
@@ -65,17 +72,15 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
     DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, DlgProc);
     // winsock
     {
-       
-        // 윈속 초기화
-        WSADATA wsa;
-        if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-            return 1;
-
         // 소켓 생성
         sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock == INVALID_SOCKET) err_quit("socket");
+        if (sock == INVALID_SOCKET) {
+            std::cerr << "Failed to create socket. Error: " << WSAGetLastError() << std::endl;
+            MessageBox(NULL, L"Failed to create server socket", L"Socket Error", MB_ICONERROR | MB_OK);
 
-        // connect()
+        }
+            // connect()
         struct sockaddr_in serveraddr;
         memset(&serveraddr, 0, sizeof(serveraddr));
         serveraddr.sin_family = AF_INET;
@@ -94,6 +99,38 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
         if (retval == SOCKET_ERROR) err_display("receive - clientID");
     }
 
+    HANDLE th = CreateThread(NULL, 0, clientThread, (LPVOID)sock, 0, NULL);
+    if (th == NULL) closesocket(sock);
+    else CloseHandle(th);
+
+    unsigned short matchingStart = GAMESTART;
+    retval = send(sock, (char*)&matchingStart, sizeof(matchingStart), 0);
+    if (retval == SOCKET_ERROR) err_display("send - matchingStart");
+
+    // 게임 시작 신호 수신
+    bool recvStart = false;
+    while (!recvStart) {
+        s_UIPacket gameStart = {};
+        retval = recv(sock, (char*)&gameStart.s_UIType, sizeof(gameStart), 0);
+        if (retval == SOCKET_ERROR) {
+            err_display("receive - s_UIPacket(gameStart)");
+            //return;
+        }
+        if (gameStart.s_UIType != GAMESTART) {
+            err_display("receive - s_UIPacket(gameStart)");
+            //return;
+        }
+        else {
+            recvStart = true;
+        }
+
+    }
+    if (!InitInstance(hInstance, nCmdShow))
+    {
+        return FALSE;
+    }
+
+
     while (true)
     {
         if (::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -108,7 +145,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
 
             // 게임 프레임 업데이트
             frameTime = 1.0f / 60.0f;  // 약 60FPS로 가정
-            gameframework.Update(frameTime);
+            gameframework.Update(frameTime, sock);
             InvalidateRect(GetActiveWindow(), NULL, FALSE);
 
             // 프레임이 너무 빨리 그려지는 경우 대기
@@ -121,8 +158,10 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
         }
     }
 
+    
+    
+    
     gameframework.Clear();
-
     return (int)msg.wParam;
 }
 
@@ -201,7 +240,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     break;
 
     case WM_TIMER:
-        gameframework.Update(0.016f); // 약 60FPS로 가정 (1초 / 60프레임)
+        gameframework.Update(0.016f,sock); // 약 60FPS로 가정 (1초 / 60프레임)
         InvalidateRect(hWnd, NULL, FALSE);
         break;
 
@@ -211,7 +250,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         }
     case WM_KEYUP:
-        gameframework.OnKeyBoardProcessing(message, wParam, lParam);
+        gameframework.OnKeyBoardProcessing(message, wParam, lParam, sock);
         break;
 
     case WM_LBUTTONDOWN:

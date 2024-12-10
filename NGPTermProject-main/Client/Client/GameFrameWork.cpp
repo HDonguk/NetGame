@@ -15,21 +15,23 @@ extern HFONT hFont;
 std::vector<Enemy*> enemies;
 
 
-// 기본 생성자 구현
 GameFramework::GameFramework()
     : m_hdcBackBuffer(nullptr),
     m_hBitmap(nullptr), m_hOldBitmap(nullptr),
     player(nullptr), camera(nullptr),
     showClickImage(false), clickImageTimer(0.0f),
-    enemySpawnTimer(0.0f), bigBoomerSpawnTimer(0.0f), lampreySpawnTimer(0.0f), yogSpawnTimer(0.0f),
+    enemySpawnTimer(0.0f), bigBoomerSpawnTimer(0.0f), lampreySpawnTimer(0.0f),  yogSpawnTimer(0.0f),
     currentGun(&revolver),
     frameTime(0.0f), gameTimeSeconds(0),
     isPaused(false),
-    isShowingUpgradePanel(false),
+    isShowingUpgradePanel(false), 
     isMainMenu(true), menuAnimationFrame(0), menuAnimationAccumulator(0.0f), selectedMenuItem(0),
-    isMainMenuMusicPlaying(false) {
-
+    isMainMenuMusicPlaying(false){// isBackgroundMusicPlaying(false) {
     Clear();
+
+    menuImages[0].Load(L"./resources/background/Title_0.png");
+    menuImages[1].Load(L"./resources/background/Title_1.png");
+    menuImages[2].Load(L"./resources/background/Title_2.png");
 
     mapImage.Load(L"./resources/background/background.png");
     pauseUIImage.Load(L"./resources/ui/T_PauseMenu.png");
@@ -37,9 +39,8 @@ GameFramework::GameFramework()
     int mapWidth = mapImage.GetWidth();
     int mapHeight = mapImage.GetHeight();
 
-    // 기본 플레이어 생성 (기본 생성자 사용 시 위치는 기본값으로 설정)
-    player = new Player(0, mapWidth / 2.0f, mapHeight / 2.0f, 2.0f, 0.2f, this);
-
+    player = new Player(mapWidth / 2.0f, mapHeight / 2.0f, 2.0f, 0.2f, this); // gameFramework 포인터 전달
+    // xPos, yPos, speed, animationSpeed, gameframeworkPtr
     player->SetBounds(mapWidth, mapHeight);
 
     camera = new Camera(800, 600);
@@ -55,18 +56,8 @@ GameFramework::GameFramework()
     bulletUI.Load(L"./resources/ui/bullet_ui.png");
     bulletUsedUI.Load(L"./resources/ui/bullet_used_ui.png");
 
-    menuImages[0].Load(L"./resources/background/Title_0.png");
-    menuImages[1].Load(L"./resources/background/Title_1.png");
-    menuImages[2].Load(L"./resources/background/Title_2.png");
-}
 
-// 기존의 인자를 받는 생성자 구현
-GameFramework::GameFramework(const s_playerPacket& playerPacket)
-    : GameFramework() {  // 기본 생성자를 먼저 호출하여 초기화한 후 추가로 작업
-    player->SetID(playerPacket.id);
-    player->SetPosition(playerPacket.x, playerPacket.y);
-    player->SetSpeed(playerPacket.speed);
-    player->SetAnimationSpeed(playerPacket.animationSpeed);
+    
 }
 
 HFONT hFont = nullptr;
@@ -125,7 +116,7 @@ void GameFramework::ResetGame() {
 
     // 플레이어 재생성
     delete player;
-    //player = new Player(mapImage.GetWidth() / 2.0f, mapImage.GetHeight() / 2.0f, 2.0f, 0.2f, this);
+    player = new Player(mapImage.GetWidth() / 2.0f, mapImage.GetHeight() / 2.0f, 2.0f, 0.2f, this);
     player->SetBounds(mapImage.GetWidth(), mapImage.GetHeight());
 
     // 적 제거
@@ -244,6 +235,7 @@ void GameFramework::DrawMainMenu(HDC hdc) {
 
 void GameFramework::HandleMenuInput(WPARAM wParam) {
     switch (wParam) {
+        
     case VK_UP:
         selectedMenuItem = (selectedMenuItem - 1 + 2) % 2;
         break;
@@ -251,9 +243,9 @@ void GameFramework::HandleMenuInput(WPARAM wParam) {
         selectedMenuItem = (selectedMenuItem + 1) % 2;
         break;
     case VK_RETURN:
-        if (selectedMenuItem == 0) {
+        if (selectedMenuItem == 0) {//selectedMenuItem == 0
             // 게임 매칭 신호 전송
-            unsigned short matchingStart = GAMESTART;
+            /*unsigned short matchingStart = GAMESTART;
             retval = send(sock, (char*)&matchingStart, sizeof(matchingStart), 0);
             if (retval == SOCKET_ERROR) err_display("send - matchingStart");
 
@@ -273,7 +265,7 @@ void GameFramework::HandleMenuInput(WPARAM wParam) {
                 else {
                     recvStart = true;
                 }
-            }
+            }*/
             ToggleMainMenu(); // This will also stop the music
             ResetGame();
 
@@ -492,10 +484,13 @@ void GameFramework::SpawnItem(float x, float y) {
     items.push_back(new Item(x, y));
 }
 
-void GameFramework::Update(float frameTime) {
+void GameFramework::Update(float frameTime, SOCKET s) {
 
+    
     if (isMainMenu) {
+
         PlayMainMenuMusic();
+        return;
     }
     else {
         PlayBackgroundMusic();
@@ -520,13 +515,13 @@ void GameFramework::Update(float frameTime) {
     // f9치트키
     HandleCheatKeys();
 
-  
+   
     // 플레이어 업데이트
-    player->Update();
+    player->Update(s);
     camera->Update(player->GetX(), player->GetY());
 
     // 서버로 입력 상태 전송
-    player->sendInputToServer();
+    //player->sendInputToServer(s);
 
     // 체력 0 게임 리셋
     if (player->health <= 0) {
@@ -1050,7 +1045,7 @@ void GameFramework::OnKeyUp(WPARAM wParam) {
     // 필요한 경우 키 업 이벤트 처리
 }
 
-void GameFramework::OnKeyBoardProcessing(UINT iMessage, WPARAM wParam, LPARAM lParam) {
+void GameFramework::OnKeyBoardProcessing(UINT iMessage, WPARAM wParam, LPARAM lParam, SOCKET s) {
     if (isPaused) {
         switch (iMessage) {
         case WM_KEYDOWN:
@@ -1093,9 +1088,8 @@ void GameFramework::OnKeyBoardProcessing(UINT iMessage, WPARAM wParam, LPARAM lP
                 break;
             case 'S':
             case 's':
-                player->moveDown = true;
                 break;
-             player->sendInputToServer();  // 키가 눌렸을 때 입력 상태를 서버로 전송
+             //player->sendInputToServer(s);  // 키가 눌렸을 때 입력 상태를 서버로 전송
               
             case '1':
                 currentGun = &revolver;
@@ -1131,7 +1125,7 @@ void GameFramework::OnKeyBoardProcessing(UINT iMessage, WPARAM wParam, LPARAM lP
                 player->moveDown = false;
                 break;
             }
-            player->sendInputToServer();  // 키가 떼졌을 때 입력 상태를 서버로 전송
+           // player->sendInputToServer(s);   // 키가 떼졌을 때 입력 상태를 서버로 전송
             
             break;
         }
@@ -1223,7 +1217,7 @@ void GameFramework::sendGameData(SOCKET s)
     if (retval == SOCKET_ERROR) err_display("receive - c_inputPacket");
 }
 
-void GameFramework::receiveGameData(SOCKET s)
+void receiveGameData(SOCKET s)
 {
     int retval;
 
@@ -1248,7 +1242,7 @@ void GameFramework::receiveGameData(SOCKET s)
     if (retval == SOCKET_ERROR) err_display("receive - playerPacket");
 }
 
-void  GameFramework::receiveResult(SOCKET s)
+void receiveResult(SOCKET s)
 {
     int retval;
 
@@ -1256,22 +1250,3 @@ void  GameFramework::receiveResult(SOCKET s)
     retval = recv(s, (char*)&UIPacket, sizeof(UIPacket), 0);
     if (retval == SOCKET_ERROR) err_display("receive - UIPacket");
 }
-void GameFramework::UpdateFromServer(const s_playerPacket& playerPacket) {
-    if (player == nullptr) {
-        // 서버에서 처음 수신한 플레이어 상태를 바탕으로 Player 객체 생성
-        player = new Player(playerPacket.id, playerPacket.x, playerPacket.y,
-            playerPacket.speed, playerPacket.animationSpeed, this);
-    }
-    else {
-        // 기존 플레이어 객체의 상태를 갱신
-        player->SetID(playerPacket.id);
-        player->SetPosition(playerPacket.x, playerPacket.y);
-        player->SetSpeed(playerPacket.speed);
-        player->SetAnimationSpeed(playerPacket.animationSpeed);
-    }
-
-  
-}
-
-
-

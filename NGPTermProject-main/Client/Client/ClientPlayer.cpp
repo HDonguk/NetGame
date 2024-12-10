@@ -6,7 +6,7 @@
 #define PlayerWidth 20.0f
 #define PlayerHeight 25.0f
 
-Player::Player(int playerID, float x, float y, float speed, float animationSpeed, GameFramework* gameFramework)
+Player::Player(float x, float y, float speed, float animationSpeed, GameFramework* gameFramework)
     : x(x), y(y), speed(speed), animationSpeed(animationSpeed), currentFrame(0), frameTimeAccumulator(0.0f),
     moveLeft(false), moveRight(false), moveUp(false), moveDown(false), isMoving(false),
     boundWidth(0), boundHeight(0), directionLeft(false),
@@ -19,14 +19,12 @@ Player::Player(int playerID, float x, float y, float speed, float animationSpeed
 
 Player::~Player() {
 }
-void Player::Update() {
+void Player::Update(SOCKET s) {
     // 서버로 입력을 전송
-    sendInputToServer();
+    //sendInputToServer(s);
 
     // 서버로부터 갱신된 상태를 수신
-    ReceiveStateFromServer();
-    updateFromServer();
-
+    ReceiveStateFromServer(s);
 }
 
 
@@ -231,7 +229,20 @@ void Player::SendInputToServer(const std::string& input) {
     }
 }
 */
-
+void Player::ReceiveStateFromServer(SOCKET s) {
+    s_playerPacket packet;
+    int retval = recv(s, (char*)&packet, sizeof(packet), 0);
+    if (retval > 0) {
+        x = packet.s_playerPosX;
+        y = packet.s_playerPosY;
+        health = packet.s_playerHealth;
+    }
+    else if (retval == SOCKET_ERROR) {
+        std::cerr << "Failed to create socket. Error: " << WSAGetLastError() << std::endl;
+        MessageBox(NULL, L"Failed to create server socket", L"Socket Error", MB_ICONERROR | MB_OK);
+        return;
+    }
+}
 
 void Player::SetDirectionLeft(bool isLeft) {
     directionLeft = isLeft;
@@ -285,80 +296,3 @@ float Player::GetY() const {
 }
 
 
-void Player::sendInputToServer() {
-    c_inputPacket inputPacket = {};
-
-    // 클라이언트의 ID 설정
-    inputPacket.playerID = playerID;
-
-    // 현재 플레이어의 이동 상태를 입력 패킷에 설정
-    inputPacket.moveLeft = moveLeft;
-    inputPacket.moveRight = moveRight;
-    inputPacket.moveUp = moveUp;
-    inputPacket.moveDown = moveDown;
-
-    // 입력 패킷을 서버에 전송
-    int retval = send(serverSocket, reinterpret_cast<char*>(&inputPacket), sizeof(inputPacket), 0);
-    if (retval == SOCKET_ERROR) {
-        std::cerr << "Failed to send input to server. Error: " << WSAGetLastError() << std::endl;
-    }
-    else {
-        // 성공적으로 전송된 경우, 디버깅 로그 출력
-        std::cout << "Input Packet Sent to Server: moveLeft=" << inputPacket.moveLeft
-            << " moveRight=" << inputPacket.moveRight
-            << " moveUp=" << inputPacket.moveUp
-            << " moveDown=" << inputPacket.moveDown << std::endl;
-    }
-}
-void Player::updateFromServer() {
-    char buffer[1024];
-    int retval = recv(serverSocket, buffer, sizeof(buffer), 0);
-
-    if (retval > 0) {
-        // 서버에서 수신한 패킷 처리
-        const s_playerPacket* playerPacket = reinterpret_cast<const s_playerPacket*>(buffer);
-        // 플레이어 상태 업데이트
-        SetID(playerPacket->id);
-        SetPosition(playerPacket->x, playerPacket->y);
-        SetSpeed(playerPacket->speed);
-        SetAnimationSpeed(playerPacket->animationSpeed);
-        // GameFramework의 메서드를 호출하여 플레이어 상태를 업데이트합니다.
-        if (gameFramework) {
-            gameFramework->UpdateFromServer(*playerPacket);
-        }
-    }
-    else if (retval == SOCKET_ERROR) {
-        std::cerr << "Failed to receive data from server. Error: " << WSAGetLastError() << std::endl;
-    }
-}
-
-
-void Player::ReceiveStateFromServer() {
-    s_playerPacket packet;
-    int retval = recv(serverSocket, (char*)&packet, sizeof(packet), 0);
-    if (retval > 0) {
-        playerID = packet.id;
-        x = packet.x;
-        y = packet.y;
-        speed = packet.speed;
-        animationSpeed = packet.animationSpeed;
-    }
-    else if (retval == SOCKET_ERROR) {
-        std::cerr << "Failed to receive state from server. Error: " << WSAGetLastError() << std::endl;
-    }
-}
-
-void Player::SetID(int  playerID) {
-    this->playerID = playerID;
-
-}
-void Player::SetPosition(float x, float y) {
-    this->x = x;
-    this->y = y;
-}
-void Player::SetSpeed(float speed) {
-    this->speed = speed;
-}
-void Player::SetAnimationSpeed(float AnimationSpeed) {
-    this->animationSpeed = animationSpeed;
-}

@@ -11,10 +11,10 @@ class GameFramework;
 
 class Player {
 public:
-    Player(int id,float x, float y, float speed, float animationSpeed);
+    Player(float x, float y, float speed, float animationSpeed, GameFramework* gameFramework);
     ~Player();
 
-    void Update(float frameTime, const c_inputPacket& input, const std::vector<Obstacle*>& obstacles);
+    void Update(float frameTime,  const std::vector<Obstacle*>& obstacles);
     void Move(float dx, float dy, const std::vector<Obstacle*>& obstacles);
 
     float GetX() const;
@@ -37,7 +37,6 @@ public:
 
     void ApplyUpgrade(const std::wstring& upgrade);
 
-    int playerID;
     float x, y;
     float speed;
     float animationSpeed;
@@ -90,11 +89,4 @@ public:
     s_playerPacket GenerateStatePacket() const;
     int id;                // 플레이어 ID
     std::string name;      // 플레이어 이름
-
-    int GetID() const;
-
-    //Player(int id);  // 기존 생성자
-   // Player(const Client& client);  // Client 객체를 인자로 받는 생성자 추가
-private:
-   
 };

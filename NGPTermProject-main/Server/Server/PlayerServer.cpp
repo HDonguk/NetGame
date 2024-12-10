@@ -6,8 +6,8 @@
 
 extern HFONT hFont;
 
-Player::Player(int id,float x, float y, float speed, float animationSpeed)
-    : playerID(id),x(x), y(y), speed(speed), animationSpeed(animationSpeed), currentFrame(0), frameTimeAccumulator(0.0f),
+Player::Player(float x, float y, float speed, float animationSpeed, GameFramework* gameFramework)
+    : x(x), y(y), speed(speed), animationSpeed(animationSpeed), currentFrame(0), frameTimeAccumulator(0.0f),
     moveLeft(false), moveRight(false), moveUp(false), moveDown(false), isMoving(false),
     boundWidth(0), boundHeight(0), directionLeft(false),
     level(1), experience(0), experienceToNextLevel(100), levelUpEffectTime(0.0f),
@@ -29,23 +29,20 @@ void Player::ProcessInput(const c_inputPacket& input) {
 
 s_playerPacket Player::GenerateStatePacket() const {
     s_playerPacket packet;
-    packet.id = id;
-    packet.x = x;
-    packet.x = y;
-    packet.speed = speed;
-    packet.animationSpeed = animationSpeed;
+    //packet.s_playerName[20] = name;
+    packet.s_playerID = id;
+    packet.s_playerPosX = x;
+    packet.s_playerPosY = y;
+    packet.s_playerSpeed = speed;
+    packet.s_playerHealth = health;
+    packet.s_playerLevel = 1; // 임시 값
+    packet.s_playerEXP = 0;   // 임시 값
+    packet.s_isPlayerDead = (health <= 0);
     return packet;
 }
 
-void Player::Update(float frameTime,const c_inputPacket& input, const std::vector<Obstacle*>& obstacles) {
+void Player::Update(float frameTime, const std::vector<Obstacle*>& obstacles) {
 
-    // 클라이언트로부터 수신한 입력 데이터 기반으로 이동 처리
-    moveLeft = input.moveLeft;
-    moveRight = input.moveRight;
-    moveUp = input.moveUp;
-    moveDown = input.moveDown;
-
-    // 기존 프레임 및 애니메이션 업데이트
     frameTimeAccumulator += frameTime;
     levelUpEffectTime -= frameTime;
     UpdateInvincibility(frameTime);
@@ -60,7 +57,6 @@ void Player::Update(float frameTime,const c_inputPacket& input, const std::vecto
         frameTimeAccumulator = 0.0f;
     }
 
-    // 이동 처리
     isMoving = false;
     if (moveLeft) { Move(-speed, 0, obstacles); isMoving = true; }
     if (moveRight) { Move(speed, 0, obstacles); isMoving = true; }
@@ -165,8 +161,4 @@ void Player::ApplyUpgrade(const std::wstring& upgrade) {
         speed += 0.5f;
     }
     // Other upgrade cases...
-}
-
-int Player::GetID() const {
-    return playerID;
 }

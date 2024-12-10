@@ -38,10 +38,10 @@ void GameThread::run() {
     //4. updatePlayerStatus
         //cout << "updateGameObjects()" << endl;
         // 3. 게임 객체 업데이트
-        updateGameObjects();
+       // updateGameObjects();
 
         // 4. 충돌 감지
-        //Player.CheckCollision(newX, float , const std::vector<Obstacle*>&obstacles) const;
+        //checkCollisions();
 
         // 5. 클라이언트 상태 동기화
         sendUpdatedStateToClients();
@@ -49,9 +49,6 @@ void GameThread::run() {
         // 6. 프레임 간 동기화
         waitUntilNextFrame(frameStartTime);
     }
-}
-void GameThread::addPlayer(const Player& player) {
-    players.push_back(player);
 }
 
 void GameThread::stop() {
@@ -98,21 +95,18 @@ void GameThread::updateGameObjects() {
 
         // 각 플레이어 오브젝트 업데이트
         for (auto& player : players) {
-            if (player.GetID() == inputPacket.playerID) {
-                cout << "updateGameObjects(HDU)" << inputPacket.playerID << endl;
-                // 플레이어 입력을 반영한 업데이트
-                player.Update(FRAME_TIME, inputPacket, obstacles);
+            // 플레이어 입력을 반영한 업데이트
+            player.Update(FRAME_TIME, obstacles);
 
-                // 디버깅 로그
-                std::cout << "게임 로직 처리: moveLeft=" << inputPacket.moveLeft
-                    << ", moveRight=" << inputPacket.moveRight
-                    << ", moveUp=" << inputPacket.moveUp
-                    << ", moveDown=" << inputPacket.moveDown << std::endl;
-            }
+            // 디버깅 로그
+            //std::cout << "게임 로직 처리: moveLeft=" << inputPacket.moveLeft
+              //  << ", moveRight=" << inputPacket.moveRight
+               // << ", moveUp=" << inputPacket.moveUp
+               // << ", moveDown=" << inputPacket.moveDown << std::endl;
         }
     }
     else {
-      //  std::cerr << "Warning: sharedInputList is empty!" << std::endl;
+        std::cerr << "Warning: sharedInputList is empty!" << std::endl;
         LeaveCriticalSection(&cs);
     }
 
@@ -125,8 +119,8 @@ void GameThread::updateGameObjects() {
     //   bullet.Update(FRAME_TIME);
     }
 }
-
-/*void GameThread::checkCollisions() {
+/*
+void GameThread::checkCollisions() {
     for (auto& bullet : bullets) {
         for (auto& enemy : enemies) {
             if (bullet.CheckCollision(enemy.GetX(), enemy.GetY(), enemy.GetWidth(), enemy.GetHeight())) {
@@ -135,8 +129,8 @@ void GameThread::updateGameObjects() {
             }
         }
     }
-}*/
-
+}
+*/
 void GameThread::sendUpdatedStateToClients() {
     for (const auto& player : players) {
         s_playerPacket playerPacket = player.GenerateStatePacket();

@@ -13,19 +13,13 @@
 #include <list>
 #include"Client.h"
 #include "GameThread.h"
-#include "GameFrameWork.h"
 #define SERVERPORT 9000
 #define BUFSIZE    512
 
 using namespace std;
 
-
 list<c_inputPacket> sharedInputList;
 list<Client> waitClientList; // 전역(gameThread 에서 이용하기 위해) 수정필요
-//list<Client> matchedClientList; // gameThread에서 이용할것
-//Client matchedClient;
-Client client;
-
  CRITICAL_SECTION cs;                // 전역으로 Critical Section 선언 //Client 클래스 헤더파일로 분리 
  int nextID = 1; // 전역 변수 nextID 정의
 
@@ -48,7 +42,7 @@ DWORD WINAPI networkThread(LPVOID arg)
 {
 	SOCKET clientSock = (SOCKET)arg;
 	int retval;
-	//Client client; // 전역선언 
+	Client client;
 
 	// 닉네임 받기
 	retval = recv(clientSock, client.name, sizeof(client.name), 0);
@@ -117,30 +111,6 @@ DWORD WINAPI networkThread(LPVOID arg)
 		while (!gameOver)
 		{
 			cout << "Game In " << endl;
-			// 클라이언트로부터 입력 수신
-			c_inputPacket inputPacket = {};
-			int retval = recv(clientSock, (char*)&inputPacket, sizeof(inputPacket), 0);
-			if (retval == SOCKET_ERROR) {
-				std::cerr << "Failed to receive input from client. Error: " << WSAGetLastError() << std::endl;
-				break;
-			}
-			else {
-				std::cout << "Received input from client: moveLeft=" << inputPacket.moveLeft
-					<< ", moveRight=" << inputPacket.moveRight
-					<< ", moveUp=" << inputPacket.moveUp
-					<< ", moveDown=" << inputPacket.moveDown << std::endl;
-			}
-
-			
-
-			// 받은 입력을 공유 리스트에 추가
-			EnterCriticalSection(&cs);
-			sharedInputList.push_back(inputPacket);
-			std::cout << "Input received: moveLeft=" << inputPacket.moveLeft
-				<< ", moveRight=" << inputPacket.moveRight
-				<< ", moveUp=" << inputPacket.moveUp
-				<< ", moveDown=" << inputPacket.moveDown << std::endl;
-			LeaveCriticalSection(&cs);
 
 			// 게임 데이터 받기
 			receiveGameData(clientSock);
@@ -247,7 +217,6 @@ DWORD WINAPI gameThread(LPVOID arg) {
 		EnterCriticalSection(&cs);
 		if (waitClientList.size() == 1) {
 			std::cout << "GameThread - Matching finish" << std::endl;
-			//matchedClient = waitClientList.front(); // 매칭된 클라이언트를 가져옴
 			Matching = false;
 		}
 		LeaveCriticalSection(&cs);
@@ -256,18 +225,10 @@ DWORD WINAPI gameThread(LPVOID arg) {
 	// 매칭 완료 후 게임 시작 이벤트 설정
 	SetEvent(hGameStartEvent);
 	std::cout << "gameThread start" << std::endl;
-	// 서버에서 맵 크기를 직접 설정
-	int mapWidth = 1024;  // 맵의 가로 크기 (클라이언트와 일치해야 함)
-	int mapHeight = 768;  // 맵의 세로 크기 (클라이언트와 일치해야 함)
 
-	// 플레이어 객체 생성
-	Player newPlayer(client.ID, mapWidth / 2.0f, mapHeight / 2.0f, 2.0f, 0.2f); // 맵의 중앙에 위치
 	// GameThread 객체 생성 및 게임 실행
 	GameThread game;  // GameThread 객체 생성
-	std::cout << "기본 GameThread 생성자 호출" << std::endl;
-	//Player::Player(int id, float x = 0.0f, float y = 0.0f, float speed = 1.0f, float animationSpeed = 1.0f, GameFramework * gameFramework = nullptr);
-	game.addPlayer(newPlayer);          // GameThread에 플레이어 추가
-
+	std::cout << "gameThread run in" << std::endl;
 	game.run();       // 게임 실행
 
 	return 0;
