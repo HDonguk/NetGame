@@ -35,7 +35,8 @@ void GameThread::run() {
     //1. updateEnemys
     //2. updateBullet
     //3. collisionAction
-       updatePlayerStatus();
+       //cout << "updatePlayerStatus()" << endl;
+       //updatePlayerStatus();
 
 
    

@@ -44,7 +44,7 @@ Client client;
 // 통신용 스레드 분리
 DWORD WINAPI clientThread(LPVOID arg)
 {
-    gameframework.getPlayer()->Update((SOCKET)arg);
+   // gameframework.getPlayer()->Update((SOCKET)arg, sock);
     return 0;
 }
 
@@ -103,28 +103,35 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
     if (th == NULL) closesocket(sock);
     else CloseHandle(th);
 
+    // 게임 매칭 신호 전송
     unsigned short matchingStart = GAMESTART;
     retval = send(sock, (char*)&matchingStart, sizeof(matchingStart), 0);
     if (retval == SOCKET_ERROR) err_display("send - matchingStart");
 
     // 게임 시작 신호 수신
-    bool recvStart = false;
-    while (!recvStart) {
-        s_UIPacket gameStart = {};
-        retval = recv(sock, (char*)&gameStart.s_UIType, sizeof(gameStart), 0);
-        if (retval == SOCKET_ERROR) {
-            err_display("receive - s_UIPacket(gameStart)");
-            //return;
-        }
-        if (gameStart.s_UIType != GAMESTART) {
-            err_display("receive - s_UIPacket(gameStart)");
-            //return;
-        }
-        else {
-            recvStart = true;
-        }
+    //bool recvStart = false;
+    //while (!recvStart) {
+    //    s_UIPacket gameStart = {};
+    //    retval = recv(sock, (char*)&gameStart.s_UIType, sizeof(gameStart), 0);
+    //    if (retval == SOCKET_ERROR) {
+    //        err_display("receive - s_UIPacket(gameStart)");
+    //        //return;
+    //    }
+    //    if (gameStart.s_UIType != GAMESTART) {
+    //        err_display("receive - s_UIPacket(gameStart)");
+    //        //return;
+     //   }
+     //   else {
+     //       recvStart = true;
+     //   }
 
-    }
+   // }
+    // s_initPacket 수신
+    s_initPacket initPacket = {};
+    retval = recv(sock, (char*)&initPacket, sizeof(initPacket), 0);
+    if (retval == SOCKET_ERROR) 
+        err_display("recv - initPacket");
+
     if (!InitInstance(hInstance, nCmdShow))
     {
         return FALSE;

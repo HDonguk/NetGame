@@ -88,16 +88,27 @@ DWORD WINAPI networkThread(LPVOID arg)
 		cout << "매칭 완료" << endl;
 
 		// 게임 시작 신호 전송
-		s_UIPacket gameStart(GAMESTART);
-		retval = send(clientSock, (char*)&gameStart, sizeof(gameStart), 0);
-		if (retval == SOCKET_ERROR) {
-			err_display("send - s_UIPacket(gameStart)");
-		}
-		else{
-			cout << "Game start " << endl;
-		}
+		//s_UIPacket gameStart(GAMESTART);
+		//retval = send(clientSock, (char*)&gameStart, sizeof(gameStart), 0);
+		//if (retval == SOCKET_ERROR) {
+		//	err_display("send - s_UIPacket(gameStart)");
+		//}
+		//else{
+		//	cout << "Game start " << endl;
+		//}
+		// 클라이언트로부터 확인 신호 수신
+		//unsigned short confirmSignal;
+		//retval = recv(clientSock, (char*)&confirmSignal, sizeof(confirmSignal), 0);
+		//if (retval == SOCKET_ERROR) {
+		//	err_display("recv - confirmSignal");
+		//}
+		//else if (confirmSignal == GAMESTART) {
+		//	cout << "Client  game start" << endl;
+		//}
+
 
 		// initPacket 전송
+		
 		s_initPacket init;
 		retval = send(clientSock, (char*)&init, sizeof(init), 0);
 		if (retval == SOCKET_ERROR) { 
@@ -106,6 +117,7 @@ DWORD WINAPI networkThread(LPVOID arg)
 		else {
 			cout << "send - initPacket success - " << client.ID << endl;
 		}
+		
 		// 게임 루프
 		
 		while (!gameOver)
@@ -113,13 +125,13 @@ DWORD WINAPI networkThread(LPVOID arg)
 			cout << "Game In " << endl;
 
 			// 게임 데이터 받기
-			receiveGameData(clientSock);
+			//receiveGameData(clientSock);
 
 			// 게임 데이터 전송
-			sendGameData(clientSock);
+			//sendGameData(clientSock);
 		}
 		// 게임 결과 전송
-		sendResult(clientSock, 0);
+		//sendResult(clientSock, 0);
 		
 	}
 	closesocket(clientSock);

@@ -17,7 +17,7 @@ public:
     ~Player();
 
     //ClientPlayer(SOCKET serverSocket, float x, float y, float speed, int maxHealth);
-    void Update(SOCKET s);
+    //void Update(SOCKET s);
     // 서버로 입력 전송
     void sendInputToServer(SOCKET s);
 

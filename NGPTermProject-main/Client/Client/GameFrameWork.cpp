@@ -29,9 +29,7 @@ GameFramework::GameFramework()
     isMainMenuMusicPlaying(false){// isBackgroundMusicPlaying(false) {
     Clear();
 
-    menuImages[0].Load(L"./resources/background/Title_0.png");
-    menuImages[1].Load(L"./resources/background/Title_1.png");
-    menuImages[2].Load(L"./resources/background/Title_2.png");
+   
 
     mapImage.Load(L"./resources/background/background.png");
     pauseUIImage.Load(L"./resources/ui/T_PauseMenu.png");
@@ -56,7 +54,9 @@ GameFramework::GameFramework()
     bulletUI.Load(L"./resources/ui/bullet_ui.png");
     bulletUsedUI.Load(L"./resources/ui/bullet_used_ui.png");
 
-
+    menuImages[0].Load(L"./resources/background/Title_0.png");
+    menuImages[1].Load(L"./resources/background/Title_1.png");
+    menuImages[2].Load(L"./resources/background/Title_2.png");
     
 }
 
@@ -244,8 +244,8 @@ void GameFramework::HandleMenuInput(WPARAM wParam) {
         break;
     case VK_RETURN:
         if (selectedMenuItem == 0) {//selectedMenuItem == 0
-            // 게임 매칭 신호 전송
-            /*unsigned short matchingStart = GAMESTART;
+           /* // 게임 매칭 신호 전송
+            unsigned short matchingStart = GAMESTART;
             retval = send(sock, (char*)&matchingStart, sizeof(matchingStart), 0);
             if (retval == SOCKET_ERROR) err_display("send - matchingStart");
 
@@ -253,17 +253,19 @@ void GameFramework::HandleMenuInput(WPARAM wParam) {
             bool recvStart = false;
             while (!recvStart) {
                 s_UIPacket gameStart = {};
-                retval = recv(sock, (char*)&gameStart.s_UIType, sizeof(gameStart), 0);
+                retval = recv(sock, (char*)&gameStart, sizeof(gameStart), MSG_WAITALL);
                 if (retval == SOCKET_ERROR) {
                     err_display("receive - s_UIPacket(gameStart)");
-                    //return;
                 }
-                if (gameStart.s_UIType != GAMESTART) {
-                    err_display("receive - s_UIPacket(gameStart)");
-                    //return;
-                }
-                else {
+                if (gameStart.s_UIType == GAMESTART) {
                     recvStart = true;
+
+                    // 서버로 확인 신호 전송
+                    unsigned short confirmSignal = GAMESTART;
+                    retval = send(sock, (char*)&confirmSignal, sizeof(confirmSignal), 0);
+                    if (retval == SOCKET_ERROR) {
+                        err_display("send - confirmSignal");
+                    }
                 }
             }*/
             ToggleMainMenu(); // This will also stop the music
@@ -517,7 +519,7 @@ void GameFramework::Update(float frameTime, SOCKET s) {
 
    
     // 플레이어 업데이트
-    player->Update(s);
+    player->Update(frameTime, obstacles);
     camera->Update(player->GetX(), player->GetY());
 
     // 서버로 입력 상태 전송
@@ -1088,6 +1090,7 @@ void GameFramework::OnKeyBoardProcessing(UINT iMessage, WPARAM wParam, LPARAM lP
                 break;
             case 'S':
             case 's':
+                player->moveDown = true;
                 break;
              //player->sendInputToServer(s);  // 키가 눌렸을 때 입력 상태를 서버로 전송
               

@@ -19,14 +19,67 @@ Player::Player(float x, float y, float speed, float animationSpeed, GameFramewor
 
 Player::~Player() {
 }
-void Player::Update(SOCKET s) {
-    // 서버로 입력을 전송
-    //sendInputToServer(s);
+void Player::Update(float frameTime, const std::vector<Obstacle*>& obstacles) {
 
-    // 서버로부터 갱신된 상태를 수신
-    ReceiveStateFromServer(s);
+    frameTimeAccumulator += frameTime;
+    levelUpEffectTime -= frameTime;
+    UpdateInvincibility(frameTime);
+
+    if (frameTimeAccumulator >= animationSpeed) {
+        if (isMoving) {
+            currentFrame = (currentFrame + 1) % 4; // Run 애니메이션이 4 프레임이므로
+        }
+        else {
+            currentFrame = (currentFrame + 1) % 5; // Idle 애니메이션이 5 프레임이므로
+        }
+        frameTimeAccumulator = 0.0f;
+    }
+
+    isMoving = false;
+    if (moveLeft) { Move(-speed, 0, obstacles); isMoving = true; }
+    if (moveRight) { Move(speed, 0, obstacles); isMoving = true; }
+    if (moveUp) { Move(0, -speed, obstacles); isMoving = true; }
+    if (moveDown) { Move(0, speed, obstacles); isMoving = true; }
+}
+void Player::Move(float dx, float dy, const std::vector<Obstacle*>& obstacles) {
+
+    float newX = x + dx;
+    float newY = y + dy;
+
+    if (!CheckCollision(newX, newY, obstacles)) {
+        x = newX;
+        y = newY;
+    }
+
+    // 경계를 벗어나지 않도록 위치 제한
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    if (x > boundWidth - PlayerWidth) x = boundWidth - PlayerWidth * 2;
+    if (y > boundHeight - PlayerHeight) y = boundHeight - PlayerHeight * 2;
 }
 
+void Player::UpdateInvincibility(float frameTime) {
+    if (currentInvincibilityTime > 0) {
+        currentInvincibilityTime -= frameTime;
+        if (currentInvincibilityTime < 0) currentInvincibilityTime = 0;
+    }
+}
+bool Player::CheckCollision(float newX, float newY, const std::vector<Obstacle*>& obstacles) const {
+    for (const auto& obstacle : obstacles) {
+        float ox = obstacle->GetX();
+        float oy = obstacle->GetY();
+        float ow = obstacle->GetWidth();
+        float oh = obstacle->GetHeight();
+
+        if (newX < ox + ow &&
+            newX + PlayerWidth > ox &&
+            newY < oy + oh &&
+            newY + PlayerHeight > oy) {
+            return true;
+        }
+    }
+    return false;
+}
 
 void Player::LoadImages() {
     idleImages[0].Load(L"./resources/player/Idle_0.png");
