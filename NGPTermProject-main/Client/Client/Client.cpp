@@ -41,10 +41,28 @@ HANDLE hDialogEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 Client client;
 
+void sendGameData(SOCKET s);
+void receiveGameData(SOCKET s);
+void receiveResult(SOCKET s);
 // 통신용 스레드 분리
 DWORD WINAPI clientThread(LPVOID arg)
 {
-   // gameframework.getPlayer()->Update((SOCKET)arg, sock);
+    SOCKET serverSocket = (SOCKET)arg;
+    while (true) {
+        // 1. 게임 데이터 수신
+        receiveGameData(serverSocket);
+
+        // 2. 결과 데이터 수신
+        receiveResult(serverSocket);
+
+        // 3. 게임 데이터 전송
+        sendGameData(serverSocket);
+
+        // 4. 주기적인 딜레이 (60FPS 기준)
+       // Sleep(16);
+    }
+    // 스레드 종료 시 소켓 정리
+    closesocket(serverSocket);
     return 0;
 }
 
@@ -306,3 +324,59 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return FALSE;
 }
 
+void sendGameData(SOCKET s)
+{
+    int retval;
+
+    // c_playerPacket 전송
+    c_playerPacket playerPacket;
+    // 정보 수집 필요
+    retval = send(s, (char*)&playerPacket, sizeof(playerPacket), 0);
+    if (retval == SOCKET_ERROR) err_display("receive - c_playetPacket");
+
+    // c_bulletPacket 전송
+    c_bulletPacket bulletPacket;
+    // 정보 수집 필요
+    retval = send(s, (char*)&bulletPacket, sizeof(bulletPacket), 0);
+    if (retval == SOCKET_ERROR) err_display("receive - c_bulletPacket");
+
+    // c_inputPacket 전송
+    c_inputPacket inputPacket;
+    // 정보 수집 필요
+    retval = send(s, (char*)&inputPacket, sizeof(inputPacket), 0);
+    if (retval == SOCKET_ERROR) err_display("receive - c_inputPacket");
+}
+
+void receiveGameData(SOCKET s)
+{
+    int retval;
+
+    s_enemyPacket enemyPacket;
+    retval = recv(s, (char*)&enemyPacket, sizeof(enemyPacket), 0);
+    if (retval == SOCKET_ERROR) err_display("receive - enemyPacket");
+
+    s_itemPacket itemPacket;
+    retval = recv(s, (char*)&itemPacket, sizeof(itemPacket), 0);
+    if (retval == SOCKET_ERROR) err_display("receive - itemPacket");
+
+    s_bulletPacket bulletPacket;
+    retval = recv(s, (char*)&bulletPacket, sizeof(bulletPacket), 0);
+    if (retval == SOCKET_ERROR) err_display("receive - bulletPacket");
+
+    s_obstaclePacket obstaclePacket;
+    retval = recv(s, (char*)&obstaclePacket, sizeof(obstaclePacket), 0);
+    if (retval == SOCKET_ERROR) err_display("receive - obstaclePacket");
+
+    s_playerPacket playerPacket;
+    retval = recv(s, (char*)&playerPacket, sizeof(playerPacket), 0);
+    if (retval == SOCKET_ERROR) err_display("receive - playerPacket");
+}
+
+void receiveResult(SOCKET s)
+{
+    int retval;
+
+    s_UIPacket UIPacket;
+    retval = recv(s, (char*)&UIPacket, sizeof(UIPacket), 0);
+    if (retval == SOCKET_ERROR) err_display("receive - UIPacket");
+}

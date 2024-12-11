@@ -85,26 +85,10 @@ DWORD WINAPI networkThread(LPVOID arg)
 		// 게임 잡힐 때 까지 대기
 		WaitForSingleObject(hGameStartEvent, INFINITE);
 		waitClientList.remove(client);
+
 		cout << "매칭 완료" << endl;
 
-		// 게임 시작 신호 전송
-		//s_UIPacket gameStart(GAMESTART);
-		//retval = send(clientSock, (char*)&gameStart, sizeof(gameStart), 0);
-		//if (retval == SOCKET_ERROR) {
-		//	err_display("send - s_UIPacket(gameStart)");
-		//}
-		//else{
-		//	cout << "Game start " << endl;
-		//}
-		// 클라이언트로부터 확인 신호 수신
-		//unsigned short confirmSignal;
-		//retval = recv(clientSock, (char*)&confirmSignal, sizeof(confirmSignal), 0);
-		//if (retval == SOCKET_ERROR) {
-		//	err_display("recv - confirmSignal");
-		//}
-		//else if (confirmSignal == GAMESTART) {
-		//	cout << "Client  game start" << endl;
-		//}
+		
 
 
 		// initPacket 전송
@@ -124,15 +108,21 @@ DWORD WINAPI networkThread(LPVOID arg)
 		{
 			cout << "Game In " << endl;
 
-			// 게임 데이터 받기
-			//receiveGameData(clientSock);
+			// 2. 게임 데이터 전송
+			sendGameData(clientSock);
 
-			// 게임 데이터 전송
-			//sendGameData(clientSock);
+			// 3. UI 결과 전송
+			sendResult(clientSock, 0);
+
+			// 1. 클라이언트로부터 데이터 수신
+			receiveGameData(clientSock);
+
+			
+		
 		}
 		// 게임 결과 전송
 		//sendResult(clientSock, 0);
-		
+		cout << "Game End " << endl;
 	}
 	closesocket(clientSock);
 	nextID--;
@@ -141,7 +131,7 @@ DWORD WINAPI networkThread(LPVOID arg)
 void receiveGameData(SOCKET s)
 {
 	int retval;
-
+	
 	// c_playerPacket 받기
 	c_playerPacket playerPacket;
 	retval = recv(s, (char*)&playerPacket, sizeof(playerPacket), 0);
@@ -158,14 +148,7 @@ void receiveGameData(SOCKET s)
 	if (retval == SOCKET_ERROR) {
 		err_display("receive - c_inputPacket");
 	}
-	else {
-		// 단일 유저로 가정하고 waitClientList의 첫 번째 클라이언트를 사용 수정해야할 부분
-		EnterCriticalSection(&cs);
-		if (!waitClientList.empty()) {
-			waitClientList.front().inputPacket = inputPacket; // 첫 번째 클라이언트의 입력 패킷 저장
-		}
-		LeaveCriticalSection(&cs);
-	}
+	std::cout << "recv success: " << retval << " bytes" << std::endl;
 	
 }
 
