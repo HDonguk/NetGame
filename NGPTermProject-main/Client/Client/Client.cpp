@@ -334,7 +334,7 @@ void sendGameData(SOCKET s)
     c_playerPacket playerPacket = {};
     strncpy_s(playerPacket.c_playerName, client.name, sizeof(playerPacket.c_playerName));
     playerPacket.c_playerID = client.ID;
-    playerPacket.c_playerPosX = gameframework.getPlayer()->GetX();
+    playerPacket.c_playerPosX = player->GetX();
     playerPacket.c_playerPosY = gameframework.getPlayer()->GetY();
     retval = send(s, (char*)&playerPacket, sizeof(playerPacket), 0);
     if (retval == SOCKET_ERROR) {
@@ -349,11 +349,7 @@ void sendGameData(SOCKET s)
     retval = send(s, (char*)&bulletPacket, sizeof(bulletPacket), 0);
     if (retval == SOCKET_ERROR) err_display("receive - c_bulletPacket");
 
-    // c_inputPacket 전송
-    c_inputPacket inputPacket;
-    // 정보 수집 필요
-    retval = send(s, (char*)&inputPacket, sizeof(inputPacket), 0);
-    if (retval == SOCKET_ERROR) err_display("receive - c_inputPacket");
+   
 }
 
 void receiveGameData(SOCKET s)

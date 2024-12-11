@@ -154,13 +154,7 @@ void receiveGameData(SOCKET s)
 	retval = recv(s, (char*)&bulletPacket, sizeof(bulletPacket), 0);
 	if (retval == SOCKET_ERROR) err_display("receive - c_bulletPacket");
 
-	// c_inputPacket ¹Þ±â
-	c_inputPacket inputPacket;
-	retval = recv(s, (char*)&inputPacket, sizeof(inputPacket), 0);
-	if (retval == SOCKET_ERROR) {
-		err_display("receive - c_inputPacket");
-	}
-	//std::cout << "recv success: " << retval << " bytes" << std::endl;
+	
 	
 }
 
