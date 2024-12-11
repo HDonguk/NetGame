@@ -82,7 +82,7 @@ struct s_playerPacket
 	int s_playerEXP;
 	bool s_isPlayerDead;
 };
-
+#pragma pack(push, 1) // 패딩 제거
 struct c_playerPacket
 {
 	char c_playerName[20];
@@ -90,7 +90,7 @@ struct c_playerPacket
 	float c_playerPosX;
 	float c_playerPosY;
 };
-
+#pragma pack(pop)
 struct c_bulletPacket
 {
 	float c_playerX;

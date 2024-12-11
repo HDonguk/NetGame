@@ -329,10 +329,19 @@ void sendGameData(SOCKET s)
     int retval;
 
     // c_playerPacket 전송
-    c_playerPacket playerPacket;
+    //c_playerPacket playerPacket;
     // 정보 수집 필요
+    c_playerPacket playerPacket = {};
+    strncpy_s(playerPacket.c_playerName, client.name, sizeof(playerPacket.c_playerName));
+    playerPacket.c_playerID = client.ID;
+    playerPacket.c_playerPosX = gameframework.getPlayer()->GetX();
+    playerPacket.c_playerPosY = gameframework.getPlayer()->GetY();
     retval = send(s, (char*)&playerPacket, sizeof(playerPacket), 0);
-    if (retval == SOCKET_ERROR) err_display("receive - c_playetPacket");
+    if (retval == SOCKET_ERROR) {
+        int errorCode = WSAGetLastError();
+        std::cerr << "[ERROR] send failed. Error code: " << errorCode << std::endl;
+    }
+   
 
     // c_bulletPacket 전송
     c_bulletPacket bulletPacket;

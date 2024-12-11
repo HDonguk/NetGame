@@ -21,7 +21,7 @@ class Client    // 합치면서 수정 예정
 {
 public:
 	char name[20];
-	int ID;
+	unsigned short ID;
 
 	Client()
 	{

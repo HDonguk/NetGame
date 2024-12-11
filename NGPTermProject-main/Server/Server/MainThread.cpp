@@ -13,11 +13,13 @@
 #include <list>
 #include"Client.h"
 #include "GameThread.h"
+#include<chrono>
 #define SERVERPORT 9000
 #define BUFSIZE    512
 
-using namespace std;
+std::chrono::steady_clock::time_point lastLogTime = std::chrono::steady_clock::now();
 
+using namespace std;
 list<c_inputPacket> sharedInputList;
 list<Client> waitClientList; // 전역(gameThread 에서 이용하기 위해) 수정필요
  CRITICAL_SECTION cs;                // 전역으로 Critical Section 선언 //Client 클래스 헤더파일로 분리 
@@ -35,7 +37,7 @@ void receiveGameData(SOCKET s);
 void sendGameData(SOCKET s);
 // 게임 결과 전송
 void sendResult(SOCKET s, int result);
-
+void logPlayerStatus(const c_playerPacket&);
 
 
 DWORD WINAPI networkThread(LPVOID arg)
@@ -106,7 +108,7 @@ DWORD WINAPI networkThread(LPVOID arg)
 		
 		while (!gameOver)
 		{
-			cout << "Game In " << endl;
+			//cout << "Game In " << endl;
 
 			// 2. 게임 데이터 전송
 			sendGameData(clientSock);
@@ -133,9 +135,19 @@ void receiveGameData(SOCKET s)
 	int retval;
 	
 	// c_playerPacket 받기
-	c_playerPacket playerPacket;
+	c_playerPacket playerPacket = {};
 	retval = recv(s, (char*)&playerPacket, sizeof(playerPacket), 0);
-	if (retval == SOCKET_ERROR) err_display("receive - c_playetPacket");
+	if (retval == SOCKET_ERROR) {
+		int errorCode = WSAGetLastError();
+		std::cerr << "[ERROR] recv failed. Error code: " << errorCode << std::endl;
+	}
+	else {
+		std::cout << "[LOG] Player Packet Received: Name=" << playerPacket.c_playerName
+			<< ", ID=" << playerPacket.c_playerID
+			<< ", PosX=" << playerPacket.c_playerPosX
+			<< ", PosY=" << playerPacket.c_playerPosY << std::endl;
+	}
+	
 
 	// c_bulletPacket 받기
 	c_bulletPacket bulletPacket;
@@ -148,7 +160,7 @@ void receiveGameData(SOCKET s)
 	if (retval == SOCKET_ERROR) {
 		err_display("receive - c_inputPacket");
 	}
-	std::cout << "recv success: " << retval << " bytes" << std::endl;
+	//std::cout << "recv success: " << retval << " bytes" << std::endl;
 	
 }
 
@@ -163,7 +175,7 @@ void sendGameData(SOCKET s)
 		std::cerr << "Send error: " << errorCode << std::endl;
 	}
 	else {
-		std::cout << "Send success: " << retval << " bytes" << std::endl;
+		//std::cout << "Send success: " << retval << " bytes" << std::endl;
 	}
 
 	s_itemPacket itemPacket;
@@ -189,7 +201,7 @@ void sendGameData(SOCKET s)
 		std::cerr << "Send error: " << errorCode << std::endl;
 	}
 	else {
-		std::cout << "Send success: " << retval << " bytes" << std::endl;
+		//std::cout << "Send success: " << retval << " bytes" << std::endl;
 	}
 }
 
@@ -296,4 +308,20 @@ int main(int argc, char* argv[])
 	// 윈속 종료
 	WSACleanup();
 	return 0;
+}
+
+void logPlayerStatus(const c_playerPacket& player)
+{
+	auto now = std::chrono::steady_clock::now();
+	auto duration = chrono::duration_cast<std::chrono::seconds>(now - lastLogTime);
+
+	if (duration.count() >= 5) { // 10초가 경과한 경우에만 로그 출력
+		std::cout << "[LOG] Player Status Updated: ID=" << player.c_playerID
+			<< ", PosX=" << player.c_playerPosX
+			<< ", PosY=" << player.c_playerPosY
+			<< std::endl;
+
+		// 마지막 로그 출력 시간 갱신
+		lastLogTime = now;
+	}
 }

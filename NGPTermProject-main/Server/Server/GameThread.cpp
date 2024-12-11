@@ -53,7 +53,12 @@ void GameThread::updatePlayerStatus() {
         PlayerStatusPacket clientStatus = player.GetReceivedStatus();
         float newX = clientStatus.posX;
         float newY = clientStatus.posY;
-
+        // 클라이언트 상태 로그 출력
+        std::cout << "[LOG] Updating Player ID: " << clientStatus.playerId
+            << ", PosX=" << clientStatus.posX
+            << ", PosY=" << clientStatus.posY
+            << ", Health=" << clientStatus.health
+            << std::endl;
         // 다른 플레이어 리스트 생성 (현재 플레이어 제외)
         std::vector<Player*> otherPlayers;
         for (auto& other : players) {
