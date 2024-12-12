@@ -1302,6 +1302,7 @@ void GameFramework::receiveGameData(SOCKET s)
         err_display("receive - bulletPacket");
         return;
     }
+    //UpdateBulletsFromServer(recvBullets);
      // c_playerPacket 데이터 수신 (3개 고정)
     std::vector<c_playerPacket> recvPlayers(3); // ID 1, 2, 3 데이터
     for (int i = 0; i < 3; ++i) {
@@ -1314,7 +1315,7 @@ void GameFramework::receiveGameData(SOCKET s)
     
     //UpdatePlayerInfoVerMini(recv_players);
 
-    cout << "receive game data" << endl;
+    //cout << "receive game data" << endl;
 }
 
 void GameFramework::receiveResult(SOCKET s)
@@ -1360,4 +1361,15 @@ void GameFramework::UpdatePlayerInfoVerMini(vector<PlayerStatusPacket> packet)
         players[i]->health = packet[i].health;
         players[i]->ID = packet[i].playerId;
     }
+}
+void GameFramework::UpdateBulletsFromServer(const std::vector<c_bulletPacket>& packets) {
+    bullets.clear(); // 기존 총알 데이터 제거
+
+    for (const auto& packet : packets) {
+        // 수신된 패킷 데이터를 기반으로 Bullet 객체 생성
+        Bullet* newBullet = new Bullet(packet.c_playerX, packet.c_playerY, packet.c_targetY, packet.c_targetX, 0.25f,1500.0f);
+        bullets.push_back(newBullet);
+    }
+
+    std::cout << "[LOG(Client)] Updated bullets with " << packets.size() << " new bullets." << std::endl;
 }

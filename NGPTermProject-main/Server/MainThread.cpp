@@ -186,33 +186,13 @@ void sendGameData(SOCKET s)
 		return;
 	}
 
-	std::cout << "[LOG(Server)] Sent " << fixedBulletCount << " Bullet Packets." << std::endl;
+	std::cout << "[LOG(Server)] Sent Bullet Packet X: " << fixedBulletPackets[0].c_playerX 
+		<< " y : " << fixedBulletPackets[0].c_playerY<< std::endl;
 
 	sharedBulletPackets.clear(); // 기존 벡터 초기화
 	LeaveCriticalSection(&cs); // 동기화 해제
 
-	EnterCriticalSection(&cs); // 동기화
-
-	if (!sharedBulletPackets.empty()) {
-		// 벡터 데이터 전송
-		int dataSize = sharedBulletPackets.size() * sizeof(c_bulletPacket);
-		int retval = send(s, (char*)sharedBulletPackets.data(), dataSize, 0);
-		if (retval == SOCKET_ERROR) {
-			err_display("send - bulletPacket");
-			LeaveCriticalSection(&cs);
-			return;
-		}
-
-		std::cout << "[LOG(Server)] Sent " << sharedBulletPackets.size() << " Bullet Packets." << std::endl;
-
-		// 전송 후 벡터 초기화
-		sharedBulletPackets.clear();
-	}
-	else {
-		std::cout << "[LOG(Server)] No bullet packets to send." << std::endl;
-	}
-
-	LeaveCriticalSection(&cs); // 동기화 해제
+	
 	// s_playerPacket 전송
 	//dataSize = sizeof(PlayerStatusPacket) * 3;
 	//retval = send(s, (char*)sendPlayers.data(), dataSize, 0);

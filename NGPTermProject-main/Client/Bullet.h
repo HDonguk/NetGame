@@ -18,7 +18,8 @@ public:
 
     bool isHit;
     bool isEffectFinished() const;
-
+    float hitEffectDuration;
+    float hitEffectTime;
 private:
     void UpdateHitEffect(float frameTime);
     void DrawHitEffect(HDC hdc, float offsetX, float offsetY);
@@ -26,8 +27,7 @@ private:
 
     CImage bulletImage;
 
-    float hitEffectDuration;
-    float hitEffectTime;
+  
     std::vector<CImage> hitEffectImages;
 };
 
