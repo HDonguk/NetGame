@@ -1295,13 +1295,11 @@ void GameFramework::receiveGameData(SOCKET s)
     //if (retval == SOCKET_ERROR) err_display("receive - bulletPacket");
 
     // s_playerPacket ¼ö½Å
-    vector<PlayerStatusPacket> recv_players = {};
-    dataSize = sizeof(PlayerStatusPacket) * 3;
-    recv_players.resize(3);
-    retval = recv(s, (char*)recv_players.data(), sizeof(PlayerStatusPacket) * 3, MSG_WAITALL);
+    s_playerPacket s_player = {};
+    retval = recv(s, (char*)&s_player, sizeof(s_playerPacket), MSG_WAITALL);
     if (retval == SOCKET_ERROR) err_display("receive - playerPacket");
     
-    UpdatePlayerInfoVerMini(recv_players);
+    //UpdatePlayerInfoVerMini(recv_players);
 
     cout << "receive game data" << endl;
 }

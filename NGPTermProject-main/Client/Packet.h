@@ -101,10 +101,6 @@ struct s_playerPacket
 	unsigned short s_playerID;
 	float s_playerPosX;
 	float s_playerPosY;
-	float s_playerSpeed;
-	unsigned short s_playerHealth;
-	int s_playerLevel;
-	int s_playerEXP;
 };
 
 struct c_playerPacket

@@ -24,6 +24,8 @@ public:
     void updateBulletStatus();
     void updatePlayerStatus();
     bool CheckCollision(const Player& player);
+
+    
 private:
     
     void waitUntilNextFrame(const std::chrono::time_point<std::chrono::steady_clock>& frameStartTime); // 프레임 간 동기화

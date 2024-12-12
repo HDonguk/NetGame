@@ -50,11 +50,13 @@ DWORD WINAPI clientThread(LPVOID arg)
 {
     SOCKET serverSocket = (SOCKET)arg;
     while (true) {
-        // 1. 게임 데이터 수신
-        //gameframework.receiveGameData(serverSocket);
-        
+
         // 3. 게임 데이터 전송
         gameframework.sendGameData(serverSocket);
+        // 1. 게임 데이터 수신
+        gameframework.receiveGameData(serverSocket);
+        
+        
 
         // 4. 주기적인 딜레이 (60FPS 기준)
         Sleep(32);

@@ -289,7 +289,7 @@ void Player::ReceiveStateFromServer(SOCKET s) {
     if (retval > 0) {
         x = packet.s_playerPosX;
         y = packet.s_playerPosY;
-        health = packet.s_playerHealth;
+      
     }
     else if (retval == SOCKET_ERROR) {
         std::cerr << "Failed to create socket. Error: " << WSAGetLastError() << std::endl;

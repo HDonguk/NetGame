@@ -10,6 +10,14 @@
 std::vector<PlayerStatusPacket> PlayerStatus;  // 서버 패킷 리스트 선언
 std::vector<c_playerPacket> receivedPlayerPackets;
 std::vector<c_bulletPacket> receivedBulletPackets;
+std::vector<s_playerPacket> sendPlayerPackets;
+std::vector<s_bulletPacket> sendBulletPackets;
+
+vector<s_enemyPacket> enemies = {};
+vector<s_obstaclePacket> obstacles = {};
+vector<s_bulletPacket> Sendbullets = {};
+vector<s_itemPacket> items = {};
+vector<s_playerPacket> sendPlayers = {};
 extern CRITICAL_SECTION cs;         // Critical Section 전역 변수 정의
 // 30FPS 기준
 #define FRAME_TIME 0.033f
@@ -39,7 +47,7 @@ void GameThread::run() {
     //3. collisionAction
        //cout << "updatePlayerStatus()" << endl;
        updatePlayerStatus();
-       updateBulletStatus();
+       //updateBulletStatus();
        Sleep(32);
    
         waitUntilNextFrame(frameStartTime);
@@ -54,16 +62,18 @@ void GameThread::updatePlayerStatus() {
         s_player.s_playerPosX = c_player.c_playerPosX;
         s_player.s_playerPosY = c_player.c_playerPosY;
 
-        // 업데이트된 s_playerPacket을 players 벡터에 추가
-        //players.push_back(s_player);
+        
+        sendPlayers.push_back(s_player); // 전역 벡터에 추가
         std::cout 
             << "[LOG(GameTread)] ID=" << s_player.s_playerID
             << ", PosX=" << s_player.s_playerPosX
             << ", PosY=" << s_player.s_playerPosY << std::endl;
+        
     }
-    receivedPlayerPackets.clear(); // 처리한 데이터 제거
+    receivedPlayerPackets.clear(); // 처리한 데이터
     LeaveCriticalSection(&cs); // 동기화 해제
 }
+
 void GameThread::updateBulletStatus()
 {
     EnterCriticalSection(&cs); // 동기화
@@ -75,7 +85,7 @@ void GameThread::updateBulletStatus()
         s_bullet.s_targetY = c_bullet.c_targetY;
 
         // 업데이트된 s_bulletPacket을 bullets 벡터에 추가
-        //bullets.push_back(s_bullet);
+        Sendbullets.push_back(s_bullet);
 
         std::cout << "[LOG(GameThread)] Bullet Packet Received: PlayerX=" << s_bullet.s_playerX
             << ", PlayerY=" << s_bullet.s_playerY

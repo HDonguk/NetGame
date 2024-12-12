@@ -19,6 +19,8 @@
 using namespace std;
 extern std::vector<c_playerPacket> receivedPlayerPackets; // 전역 리스트
 extern std::vector<c_bulletPacket> receivedBulletPackets; // 전역 리스트
+extern std::vector<c_playerPacket> sendPlayerPackets; // 전역 리스트
+extern std::vector<c_bulletPacket> sendBulletPackets; // 전역 리스트
 list<c_inputPacket> sharedInputList;
 list<Client> waitClientList; // 전역(gameThread 에서 이용하기 위해) 수정필요
  CRITICAL_SECTION cs;                // 전역으로 Critical Section 선언 //Client 클래스 헤더파일로 분리 
@@ -29,11 +31,11 @@ HANDLE hGameStartEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 bool gameOver = false;
 //CRITICAL_SECTION cs;
 
-vector<s_enemyPacket> enemies = {};
-vector<s_obstaclePacket> obstacles = {};
-vector<s_bulletPacket> bullets = {};
-vector<s_itemPacket> items = {};
-vector<s_playerPacket> sendPlayers = {};
+extern vector<s_enemyPacket> sendenemies ;
+extern vector<s_obstaclePacket> sendobstacles ;
+extern vector<s_bulletPacket> sendbullets ;
+extern vector<s_itemPacket> senditems ;
+extern vector<s_playerPacket> sendPlayers ;
 
 vector<c_bulletPacket> c_bullets = {};
 c_bulletPacket recv_bullet;
@@ -119,11 +121,12 @@ DWORD WINAPI networkThread(LPVOID arg)
 		{
 			cout << "Game In " << endl;
 
-			// 2. 게임 데이터 전송
+			
 			sendGameData(clientSock);
-
 			// 1. 클라이언트로부터 데이터 수신
 			receiveGameData(clientSock);
+			// 2. 게임 데이터 전송
+			
 
 			// 프레임 고정
 			Sleep(32);
@@ -171,13 +174,31 @@ void sendGameData(SOCKET s)
 	//if (retval == SOCKET_ERROR) { err_display("send - bulletPacket"); }
 
 	// s_playerPacket 전송
-	dataSize = sizeof(PlayerStatusPacket) * 3;
-	retval = send(s, (char*)sendPlayers.data(), dataSize, 0);
-	if (retval == SOCKET_ERROR) { err_display("send - playerPacket"); }
-	//std::cout << "[LOG] Send: Name=" << sendPlayers.s_playerName
-		//<< ", ID=" << sendPlayers.c_playerID
-		//<< ", PosX=" << sendPlayers.c_playerPosX
-		//<< ", PosY=" << sendPlayers.c_playerPosY << std::endl;
+	//dataSize = sizeof(PlayerStatusPacket) * 3;
+	//retval = send(s, (char*)sendPlayers.data(), dataSize, 0);
+	//if (retval == SOCKET_ERROR) { err_display("send - playerPacket"); }
+	//cout << "send game data" << endl;
+	EnterCriticalSection(&cs); // 동기화
+	if (!sendPlayers.empty()) {
+		// 벡터에서 첫 번째 데이터 전송
+		s_playerPacket packetToSend = sendPlayers.front();
+	    retval = send(s, (char*)&packetToSend, sizeof(s_playerPacket), 0);
+		if (retval == SOCKET_ERROR) {
+			err_display("send - playerPacket");
+			LeaveCriticalSection(&cs);
+			return;
+		}
+		std::cout << "[LOG(MainThread)] Sent Player Packet: ID=" << packetToSend.s_playerID
+			<< ", PosX=" << packetToSend.s_playerPosX
+			<< ", PosY=" << packetToSend.s_playerPosY << std::endl;
+
+		// 전송 후 벡터에서 해당 데이터 제거
+		sendPlayers.erase(sendPlayers.begin());
+	}
+	else {
+		std::cout << "[LOG(MainThread)] No player packets to send." << std::endl;
+	}
+	LeaveCriticalSection(&cs); // 동기화 해제
 }
 
 void receiveGameData(SOCKET s)
@@ -200,6 +221,7 @@ void receiveGameData(SOCKET s)
 		<< ", ID=" << c_player.c_playerID
 		<< ", PosX=" << c_player.c_playerPosX
 		<< ", PosY=" << c_player.c_playerPosY << std::endl;
+
 
 	c_bulletPacket recv_bullet = {};
 	// c_bulletPacket 받기
