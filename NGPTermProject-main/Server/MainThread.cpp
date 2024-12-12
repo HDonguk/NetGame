@@ -166,6 +166,31 @@ void sendGameData(SOCKET s)
 	//if (retval == SOCKET_ERROR) { err_display("send - bulletPacketSize"); }
 	//retval = send(s, (char*)bullets.data(), dataSize, 0);
 	//if (retval == SOCKET_ERROR) { err_display("send - bulletPacket"); }
+
+	EnterCriticalSection(&cs); // 동기화
+
+	const int fixedBulletCount = 5; // 총알 데이터 개수를 고정
+	std::vector<c_bulletPacket> fixedBulletPackets(fixedBulletCount);
+
+	// 기존 데이터를 복사
+	for (int i = 0; i < sharedBulletPackets.size() && i < fixedBulletCount; ++i) {
+		fixedBulletPackets[i] = sharedBulletPackets[i];
+	}
+
+	// 고정된 크기로 전송
+	 dataSize = fixedBulletCount * sizeof(c_bulletPacket);
+	 retval = send(s, (char*)fixedBulletPackets.data(), dataSize, 0);
+	if (retval == SOCKET_ERROR) {
+		err_display("send - bulletPacket");
+		LeaveCriticalSection(&cs);
+		return;
+	}
+
+	std::cout << "[LOG(Server)] Sent " << fixedBulletCount << " Bullet Packets." << std::endl;
+
+	sharedBulletPackets.clear(); // 기존 벡터 초기화
+	LeaveCriticalSection(&cs); // 동기화 해제
+
 	EnterCriticalSection(&cs); // 동기화
 
 	if (!sharedBulletPackets.empty()) {
