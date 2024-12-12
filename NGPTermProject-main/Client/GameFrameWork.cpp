@@ -1302,6 +1302,7 @@ void GameFramework::receiveGameData(SOCKET s)
         err_display("receive - bulletPacket");
         return;
     }
+
      // c_playerPacket 데이터 수신 (3개 고정)
     std::vector<c_playerPacket> recvPlayers(3); // ID 1, 2, 3 데이터
     for (int i = 0; i < 3; ++i) {
