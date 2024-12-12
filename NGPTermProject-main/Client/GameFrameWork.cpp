@@ -1293,6 +1293,15 @@ void GameFramework::receiveGameData(SOCKET s)
     //recv_bullets.resize(vSize);
     //retval = recv(s, (char*)recv_bullets.data(), dataSize, MSG_WAITALL);
     //if (retval == SOCKET_ERROR) err_display("receive - bulletPacket");
+    const int fixedBulletCount = 5; // 고정된 총알 데이터 수
+    std::vector<c_bulletPacket> recvBullets(fixedBulletCount);
+
+    // 총알 데이터 수신
+    retval = recv(s, (char*)recvBullets.data(), fixedBulletCount * sizeof(c_bulletPacket), MSG_WAITALL);
+    if (retval == SOCKET_ERROR) {
+        err_display("receive - bulletPacket");
+        return;
+    }
 
      // c_playerPacket 데이터 수신 (3개 고정)
     std::vector<c_playerPacket> recvPlayers(3); // ID 1, 2, 3 데이터

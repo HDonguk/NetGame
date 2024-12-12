@@ -40,6 +40,16 @@ void GameThread::run() {
        //cout << "updatePlayerStatus()" << endl;
        //updatePlayerStatus();
        //updateBulletStatus();
+<<<<<<< Updated upstream
+=======
+
+        updateEnemy(0.016f);
+        for (auto player : players) {
+            SpawnEnemy(0.016f, player);
+        }
+        //cout << enemies.size() << "°³ÀÇ enemy spawn" << endl;
+
+>>>>>>> Stashed changes
        Sleep(32);
    
         waitUntilNextFrame(frameStartTime);
