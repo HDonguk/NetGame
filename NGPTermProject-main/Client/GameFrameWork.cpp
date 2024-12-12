@@ -14,6 +14,7 @@ extern GameFramework gameframework;
 extern HFONT hFont;
 std::vector<Enemy*> enemies;
 
+Client client;
 
 GameFramework::GameFramework()
     : m_hdcBackBuffer(nullptr),
@@ -38,6 +39,7 @@ GameFramework::GameFramework()
     int mapHeight = mapImage.GetHeight();
 
     player = new Player(mapWidth / 2.0f, mapHeight / 2.0f, 2.0f, 0.2f, this); // gameFramework 포인터 전달
+    players.push_back(player); // players 벡터에 player 추가
     // xPos, yPos, speed, animationSpeed, gameframeworkPtr
     player->SetBounds(mapWidth, mapHeight);
 
@@ -154,10 +156,10 @@ void GameFramework::ResetGame() {
     StartCreateObstacles();
     CreateObstacles(0);
 
-    // initPacket 수신
-    s_initPacket init;
-    retval = send(sock, (char*)&init, sizeof(init), 0);
-    if (retval == SOCKET_ERROR) err_display("receive - initPacket");
+     //initPacket 수신
+    //s_initPacket init;
+    //retval = send(sock, (char*)&init, sizeof(init), 0);
+    //if (retval == SOCKET_ERROR) err_display("receive - initPacket");
 
 }
 
@@ -269,7 +271,7 @@ void GameFramework::HandleMenuInput(WPARAM wParam) {
                 }
             }*/
             ToggleMainMenu(); // This will also stop the music
-            ResetGame();
+            //ResetGame();
 
         }
         else if (selectedMenuItem == 1) {
@@ -312,7 +314,9 @@ void GameFramework::ShowUpgradePanel() {
 
     // 랜덤으로 업그레이드 항목 선택
     std::vector<UpgradeOptions> allUpgrades = { MaxHp, MaxAmmo, AddSpeed, UpgradeGun };
-    std::random_shuffle(allUpgrades.begin(), allUpgrades.end());
+    std::random_device rd; // 하드웨어 랜덤 넘버 생성기
+    std::mt19937 gen(rd()); // Mersenne Twister 엔진
+    std::shuffle(allUpgrades.begin(), allUpgrades.end(), gen);
     upgradeOptions[0] = allUpgrades[0];
     upgradeOptions[1] = allUpgrades[1];
 
@@ -328,6 +332,7 @@ std::wstring GameFramework::GetUpgradeOptionText(UpgradeOptions option) {
     default: return L"Unknown";
     }
 }
+
 
 void GameFramework::HideUpgradePanel() {
     isShowingUpgradePanel = false;
@@ -763,13 +768,18 @@ void GameFramework::FireBullet(float x, float y, float targetX, float targetY) {
 
         if (dynamic_cast<Revolver*>(currentGun)) {
             bullets.push_back(new RevolverBullet(x, y, targetX, targetY));
+            firedBullet = new RevolverBullet(x, y, targetX, targetY);
         }
         else if (dynamic_cast<HeadshotGun*>(currentGun)) {
             bullets.push_back(new HeadshotGunBullet(x, y, targetX, targetY));
+            firedBullet = new HeadshotGunBullet(x, y, targetX, targetY);
+
         }
         else if (dynamic_cast<ClusterGun*>(currentGun)) {
             bullets.push_back(new ClusterGunBullet(x, y, targetX, targetY));
             bullets.push_back(new ClusterGunBullet(x, y, targetX, targetY + 10));
+            firedBullet = new ClusterGunBullet(x, y, targetX, targetY);
+            firedBullet = new ClusterGunBullet(x, y, targetX, targetY + 10);
         }
         else if (dynamic_cast<DualShotgun*>(currentGun)) {
             int numBullets = 5; // 발사할 총알의 개수
@@ -781,6 +791,7 @@ void GameFramework::FireBullet(float x, float y, float targetX, float targetY) {
                 float newTargetX = x + cos(angle) * 100;
                 float newTargetY = y + sin(angle) * 100;
                 bullets.push_back(new DualShotgunBullet(x, y, newTargetX, newTargetY, 0));
+                firedBullet = new DualShotgunBullet(x, y, newTargetX, newTargetY, 0);
             }
         }
     }
@@ -908,7 +919,11 @@ void GameFramework::Draw(HDC hdc) {
 
     mapImage.Draw(m_hdcBackBuffer, -static_cast<int>(offsetX), -static_cast<int>(offsetY));
 
-    player->Draw(m_hdcBackBuffer, offsetX, offsetY);
+    for (Player* p : players)
+    {
+        p->Draw(m_hdcBackBuffer, offsetX, offsetY);
+    }
+    //player->Draw(m_hdcBackBuffer, offsetX, offsetY);
     //player->DrawBoundingBox(m_hdcBackBuffer, offsetX, offsetY);
 
     for (Enemy* enemy : enemies) {
@@ -1196,4 +1211,142 @@ void GameFramework::Create(HWND hWnd) {
     m_hWnd = hWnd;
 }
 
+void GameFramework::sendGameData(SOCKET s)
+{
+    int retval, dataSize{};
 
+    // player_packet 제작
+    c_playerPacket c_player = {};
+
+    if (player != nullptr)
+    {
+        if (player->name != nullptr)
+        {
+            strncpy_s(c_player.c_playerName, player->name, strlen(player->name));
+            c_player.c_playerName[sizeof(c_player.c_playerName) - 1] = '\0';
+        }
+        c_player.c_playerID = player->ID;
+        c_player.c_playerPosX = player->GetX();
+        c_player.c_playerPosY = player->GetY();
+    }
+
+    // c_playerPacket 전송
+    retval = send(s, (char*)&c_player, sizeof(c_playerPacket), 0);
+    if (retval == SOCKET_ERROR) err_display("send - c_playetPacket");
+
+    // bullet_packet 제작
+    c_bulletPacket c_bullet = {};
+
+    if (firedBullet != nullptr) 
+    {
+        c_bullet.c_playerX = firedBullet->x;
+        c_bullet.c_playerY = firedBullet->y;
+        c_bullet.c_targetX = firedBullet->directionX;
+        c_bullet.c_targetY = firedBullet->directionY;
+        firedBullet = nullptr;
+    }
+
+    // c_bulletPacket 전송
+    retval = send(s, (char*)&c_bullet, sizeof(c_bulletPacket), 0);
+    if (retval == SOCKET_ERROR) err_display("send - c_bulletPacket");
+}
+
+void GameFramework::receiveGameData(SOCKET s)
+{
+    int retval{}, dataSize{}, vSize{};
+
+    //// s_enemyPacket 수신
+    //vector<s_enemyPacket> recv_enemies = {};
+    //retval = recv(s, (char*)&dataSize, sizeof(int), MSG_WAITALL);
+    //if (retval == SOCKET_ERROR) err_display("receive - enemyPacketSize");
+    //vSize = dataSize / sizeof(s_enemyPacket);
+    //recv_enemies.resize(vSize);
+    //retval = recv(s, (char*)recv_enemies.data(), dataSize, MSG_WAITALL);
+    //if (retval == SOCKET_ERROR) { err_display("recv - enemyPacket"); }
+    //// 받은 패킷 gameframework에 적용
+
+
+    //// s_itemPacket 수신
+    //vector<s_itemPacket> recv_items = {};
+    //retval = recv(s, (char*)&dataSize, sizeof(int), MSG_WAITALL);
+    //if (retval == SOCKET_ERROR) err_display("receive - itemPacketSize");
+    //vSize = dataSize / sizeof(s_itemPacket);
+    //recv_items.resize(vSize);
+    //retval = recv(s, (char*)recv_items.data(), dataSize, MSG_WAITALL);
+    //if (retval == SOCKET_ERROR) err_display("receive - itemPacket");
+
+    //// s_obstaclePacket 수신
+    //vector<s_obstaclePacket> recv_obstacles = {};
+    //retval = recv(s, (char*)&dataSize, sizeof(int), MSG_WAITALL);
+    //if (retval == SOCKET_ERROR) err_display("receive - obstaclePacketSize");
+    //vSize = dataSize / sizeof(s_obstaclePacket);
+    //obstacles.resize(vSize);
+    //retval = recv(s, (char*)obstacles.data(), dataSize, MSG_WAITALL);
+    //if (retval == SOCKET_ERROR) err_display("receive - obstaclePacket");
+
+
+    //// s_bulletPacket 수신
+    //vector<s_bulletPacket> recv_bullets = {};
+    //retval = recv(s, (char*)&dataSize, sizeof(int), MSG_WAITALL);
+    //if (retval == SOCKET_ERROR) err_display("receive - bulletPacketSize");
+    //vSize = dataSize / sizeof(s_bulletPacket);
+    //recv_bullets.resize(vSize);
+    //retval = recv(s, (char*)recv_bullets.data(), dataSize, MSG_WAITALL);
+    //if (retval == SOCKET_ERROR) err_display("receive - bulletPacket");
+
+    // s_playerPacket 수신
+    vector<PlayerStatusPacket> recv_players = {};
+    dataSize = sizeof(PlayerStatusPacket) * 3;
+    recv_players.resize(3);
+    retval = recv(s, (char*)recv_players.data(), sizeof(PlayerStatusPacket) * 3, MSG_WAITALL);
+    if (retval == SOCKET_ERROR) err_display("receive - playerPacket");
+    
+    UpdatePlayerInfoVerMini(recv_players);
+
+    cout << "receive game data" << endl;
+}
+
+void GameFramework::receiveResult(SOCKET s)
+{
+    int retval;
+
+    s_UIPacket UIPacket;
+    retval = recv(s, (char*)&UIPacket, sizeof(UIPacket), 0);
+    if (retval == SOCKET_ERROR) err_display("receive - UIPacket");
+}
+
+void GameFramework::UpdatePlayerInfo(vector<s_playerPacket> packet)
+{
+    for (int i = 0; i < packet.size(); ++i)
+    {
+        if (players[i]->ID == player->ID)
+        {
+            player->ID = packet[i].s_playerID;
+            player->x = packet[i].s_playerPosX;
+            player->y = packet[i].s_playerPosY;                          
+              
+        }                                                                
+        players[i]->ID = packet[i].s_playerID;                           
+        players[i]->x = packet[i].s_playerPosX;                          
+        players[i]->y = packet[i].s_playerPosY;                          
+
+    }
+    // isDead 처리 필요
+}
+
+void GameFramework::UpdatePlayerInfoVerMini(vector<PlayerStatusPacket> packet)
+{
+    for (int i = 0; i < 3; ++i)
+    {
+        if (packet[i].playerId == player->ID)
+        {
+            player->x = packet[i].posX;
+            player->y = packet[i].posY;
+            player->health = packet[i].health;
+        }
+        players[i]->x = packet[i].posX;
+        players[i]->y = packet[i].posY;
+        players[i]->health = packet[i].health;
+        players[i]->ID = packet[i].playerId;
+    }
+}

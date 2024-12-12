@@ -21,10 +21,9 @@ public:
     void run();  // 게임 루프를 실행
     void stop(); // 게임 루프를 종료
 
+    void updateBulletStatus();
     void updatePlayerStatus();
     bool CheckCollision(const Player& player);
-
-    std::vector<Player>& GetPlayers() { return players; } // players에 대한 참조 반환
 private:
     
     void waitUntilNextFrame(const std::chrono::time_point<std::chrono::steady_clock>& frameStartTime); // 프레임 간 동기화
@@ -37,6 +36,9 @@ private:
     std::vector<Enemy> enemies;
     std::vector<Bullet> bullets;
     std::vector<Obstacle*> obstacles; 
+
+    // 패킷 생성
+    vector<PlayerStatusPacket> makeSendPlayerPacket();
 
     // 서버 통신 관련 소켓
     SOCKET serverSocket; // 수정된 부분

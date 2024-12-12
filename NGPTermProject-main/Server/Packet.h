@@ -10,6 +10,8 @@ using namespace std;
 #define VICTORY 20041
 #define DEFEAT 20042
 
+
+
 #pragma pack(1)
 struct PlayerStatusPacket {
 	unsigned short playerId;
@@ -48,9 +50,13 @@ struct s_itemPacket
 
 struct s_bulletPacket
 {
-	unsigned short s_bulletID;
-	float s_bulletPosX;
-	float s_bulletPosY;
+	float s_playerX;
+	float s_playerY;
+	float s_targetX;
+	float s_targetY;
+	//unsigned short s_bulletID;
+	//float s_bulletPosX;
+	//float s_bulletPosY;
 };
 
 struct s_obstaclePacket
@@ -72,17 +78,15 @@ struct s_UIPacket
 
 struct s_playerPacket
 {
-	char s_playerName[20];
 	unsigned short s_playerID;
 	float s_playerPosX;
 	float s_playerPosY;
 	float s_playerSpeed;
 	unsigned short s_playerHealth;
-	unsigned short s_playerLevel;
+	int s_playerLevel;
 	int s_playerEXP;
-	bool s_isPlayerDead;
 };
-#pragma pack(push, 1) // 패딩 제거
+
 struct c_playerPacket
 {
 	char c_playerName[20];
@@ -90,15 +94,13 @@ struct c_playerPacket
 	float c_playerPosX;
 	float c_playerPosY;
 };
-#pragma pack(pop)
+
 struct c_bulletPacket
-{
+{	
 	float c_playerX;
 	float c_playerY;
-	unsigned short c_bulletID;
 	float c_targetX;
 	float c_targetY;
-	unsigned short bulletDamage;
 };
 
 struct c_inputPacket

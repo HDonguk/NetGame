@@ -21,7 +21,7 @@ class Client    // 합치면서 수정 예정
 {
 public:
 	char name[20];
-	unsigned short ID;
+	int ID;
 
 	Client()
 	{
@@ -70,9 +70,13 @@ struct s_itemPacket
 
 struct s_bulletPacket
 {
-	unsigned short s_bulletID;
-	float s_bulletPosX;
-	float s_bulletPosY;
+	float s_playerX;
+	float s_playerY;
+	float s_targetX;
+	float s_targetY;
+	//unsigned short s_bulletID;
+	//float s_bulletPosX;
+	//float s_bulletPosY;
 };
 
 struct s_obstaclePacket
@@ -94,15 +98,13 @@ struct s_UIPacket
 
 struct s_playerPacket
 {
-	char s_playerName[20];
 	unsigned short s_playerID;
 	float s_playerPosX;
 	float s_playerPosY;
 	float s_playerSpeed;
 	unsigned short s_playerHealth;
-	unsigned short s_playerLevel;
+	int s_playerLevel;
 	int s_playerEXP;
-	bool s_isPlayerDead;
 };
 
 struct c_playerPacket
@@ -117,10 +119,8 @@ struct c_bulletPacket
 {
 	float c_playerX;
 	float c_playerY;
-	unsigned short c_bulletID;
 	float c_targetX;
 	float c_targetY;
-	unsigned short bulletDamage;
 };
 
 struct c_inputPacket

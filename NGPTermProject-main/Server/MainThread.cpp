@@ -13,13 +13,12 @@
 #include <list>
 #include"Client.h"
 #include "GameThread.h"
-#include<chrono>
 #define SERVERPORT 9000
 #define BUFSIZE    512
 
-std::chrono::steady_clock::time_point lastLogTime = std::chrono::steady_clock::now();
-
 using namespace std;
+extern std::vector<c_playerPacket> receivedPlayerPackets; // 전역 리스트
+extern std::vector<c_bulletPacket> receivedBulletPackets; // 전역 리스트
 list<c_inputPacket> sharedInputList;
 list<Client> waitClientList; // 전역(gameThread 에서 이용하기 위해) 수정필요
  CRITICAL_SECTION cs;                // 전역으로 Critical Section 선언 //Client 클래스 헤더파일로 분리 
@@ -30,6 +29,16 @@ HANDLE hGameStartEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 bool gameOver = false;
 //CRITICAL_SECTION cs;
 
+vector<s_enemyPacket> enemies = {};
+vector<s_obstaclePacket> obstacles = {};
+vector<s_bulletPacket> bullets = {};
+vector<s_itemPacket> items = {};
+vector<s_playerPacket> sendPlayers = {};
+
+vector<c_bulletPacket> c_bullets = {};
+c_bulletPacket recv_bullet;
+vector<c_inputPacket> c_inputs = {};
+
 
 // 게임 데이터 받기
 void receiveGameData(SOCKET s);
@@ -37,7 +46,7 @@ void receiveGameData(SOCKET s);
 void sendGameData(SOCKET s);
 // 게임 결과 전송
 void sendResult(SOCKET s, int result);
-void logPlayerStatus(const c_playerPacket&);
+
 
 
 DWORD WINAPI networkThread(LPVOID arg)
@@ -108,95 +117,104 @@ DWORD WINAPI networkThread(LPVOID arg)
 		
 		while (!gameOver)
 		{
-			//cout << "Game In " << endl;
+			cout << "Game In " << endl;
 
 			// 2. 게임 데이터 전송
 			sendGameData(clientSock);
 
-			// 3. UI 결과 전송
-			sendResult(clientSock, 0);
-
 			// 1. 클라이언트로부터 데이터 수신
 			receiveGameData(clientSock);
 
-			
-		
+			// 프레임 고정
+			Sleep(32);
 		}
 		// 게임 결과 전송
-		//sendResult(clientSock, 0);
+		sendResult(clientSock, 0);
 		cout << "Game End " << endl;
 	}
 	closesocket(clientSock);
 	nextID--;
 }
 
-void receiveGameData(SOCKET s)
-{
-	int retval;
-	
-	// c_playerPacket 받기
-	c_playerPacket playerPacket = {};
-	retval = recv(s, (char*)&playerPacket, sizeof(playerPacket), 0);
-	if (retval == SOCKET_ERROR) {
-		int errorCode = WSAGetLastError();
-		std::cerr << "[ERROR] recv failed. Error code: " << errorCode << std::endl;
-	}
-	else {
-		std::cout << "[LOG] Player Packet Received: Name=" << playerPacket.c_playerName
-			<< ", ID=" << playerPacket.c_playerID
-			<< ", PosX=" << playerPacket.c_playerPosX
-			<< ", PosY=" << playerPacket.c_playerPosY << std::endl;
-	}
-	
-
-	// c_bulletPacket 받기
-	c_bulletPacket bulletPacket;
-	retval = recv(s, (char*)&bulletPacket, sizeof(bulletPacket), 0);
-	if (retval == SOCKET_ERROR) err_display("receive - c_bulletPacket");
-
-	
-	
-}
-
 void sendGameData(SOCKET s)
 {
-	int retval;
+	if (s == INVALID_SOCKET) err_display("invalid socket");
 
-	s_enemyPacket enemyPacket;
-	retval = send(s, (char*)&enemyPacket, sizeof(enemyPacket), 0);
-	if (retval == SOCKET_ERROR) {
-		int errorCode = WSAGetLastError();
-		std::cerr << "Send error: " << errorCode << std::endl;
-	}
-	else {
-		//std::cout << "Send success: " << retval << " bytes" << std::endl;
-	}
+	int retval, dataSize;
 
-	s_itemPacket itemPacket;
-	retval = send(s, (char*)&itemPacket, sizeof(itemPacket), 0);
-	if (retval == SOCKET_ERROR) err_display("send - itemPacket");
+	//// s_enemyPacket 전송
+	//dataSize = enemies.size() * sizeof(s_enemyPacket);
+	//retval = send(s, (char*)&dataSize, sizeof(int), 0);
+	//if (retval == SOCKET_ERROR) { err_display("send - enemyPacketSize"); }
+	//retval = send(s, (char*)enemies.data(), dataSize, 0);
+	//if (retval == SOCKET_ERROR) { err_display("send - enemyPacket"); }
 
-	s_bulletPacket bulletPacket;
-	retval = send(s, (char*)&bulletPacket, sizeof(bulletPacket), 0);
-	if (retval == SOCKET_ERROR) err_display("send - bulletPacket");
+	//// s_itemPacket 전송
+	//dataSize = items.size() * sizeof(s_itemPacket);
+	//retval = send(s, (char*)&dataSize, sizeof(int), 0);
+	//if (retval == SOCKET_ERROR) { err_display("send - itemPacketSize"); }
+	//retval = send(s, (char*)items.data(), dataSize, 0);
+	//if (retval == SOCKET_ERROR) { err_display("send - itemPacket"); }
 
-	s_obstaclePacket obstaclePacket;
-	retval = send(s, (char*)&obstaclePacket, sizeof(obstaclePacket), 0);
-	if (retval == SOCKET_ERROR) err_display("send - obstaclePacket");
+	//// s_obstaclePacket 전송
+	//dataSize = obstacles.size() * sizeof(s_obstaclePacket);
+	//retval = send(s, (char*)&dataSize, sizeof(int), 0);
+	//if (retval == SOCKET_ERROR) { err_display("send - obstaclePacketSize"); }
+	//retval = send(s, (char*)obstacles.data(), dataSize, 0);
+	//if (retval == SOCKET_ERROR) { err_display("send - obstaclePacket"); }
 
-	s_UIPacket UIPacket;
-	retval = send(s, (char*)&UIPacket, sizeof(UIPacket), 0);
-	if (retval == SOCKET_ERROR) err_display("send - UIPacket");
+	//// s_bulletPacket 전송
+	//dataSize = bullets.size() * sizeof(s_bulletPacket);
+	//retval = send(s, (char*)&dataSize, sizeof(int), 0);
+	//if (retval == SOCKET_ERROR) { err_display("send - bulletPacketSize"); }
+	//retval = send(s, (char*)bullets.data(), dataSize, 0);
+	//if (retval == SOCKET_ERROR) { err_display("send - bulletPacket"); }
 
-	s_playerPacket playerPacket;
-	retval = send(s, (char*)&playerPacket, sizeof(playerPacket), 0);
-	if (retval == SOCKET_ERROR) { // 이것만 일단 조정
-		int errorCode = WSAGetLastError();
-		std::cerr << "Send error: " << errorCode << std::endl;
-	}
-	else {
-		//std::cout << "Send success: " << retval << " bytes" << std::endl;
-	}
+	// s_playerPacket 전송
+	dataSize = sizeof(PlayerStatusPacket) * 3;
+	retval = send(s, (char*)sendPlayers.data(), dataSize, 0);
+	if (retval == SOCKET_ERROR) { err_display("send - playerPacket"); }
+	//std::cout << "[LOG] Send: Name=" << sendPlayers.s_playerName
+		//<< ", ID=" << sendPlayers.c_playerID
+		//<< ", PosX=" << sendPlayers.c_playerPosX
+		//<< ", PosY=" << sendPlayers.c_playerPosY << std::endl;
+}
+
+void receiveGameData(SOCKET s)
+{
+	if (s == INVALID_SOCKET) err_display("invalid socket");
+
+	int retval, dataSize{}, vSize;
+
+	// c_playerPacket 받기
+	c_playerPacket c_player = {};
+
+	retval = recv(s, (char*)&c_player, sizeof(c_playerPacket), MSG_WAITALL);
+	if (retval == SOCKET_ERROR) err_display("receive - c_playetPacket");
+
+	EnterCriticalSection(&cs); // 동기화
+	receivedPlayerPackets.push_back(c_player);
+	LeaveCriticalSection(&cs);
+
+	std::cout << "[LOG] Player Packet Received: Name=" << c_player.c_playerName
+		<< ", ID=" << c_player.c_playerID
+		<< ", PosX=" << c_player.c_playerPosX
+		<< ", PosY=" << c_player.c_playerPosY << std::endl;
+
+	c_bulletPacket recv_bullet = {};
+	// c_bulletPacket 받기
+	retval = recv(s, (char*)&recv_bullet, sizeof(c_bulletPacket), MSG_WAITALL);
+	if (retval == SOCKET_ERROR) err_display("receive - c_bulletPacket");
+
+	EnterCriticalSection(&cs); // 동기화
+	receivedBulletPackets.push_back(recv_bullet); // Bullet 데이터 저장
+	LeaveCriticalSection(&cs);
+
+	std::cout << "[LOG] Bullet Packet Received: PlayerX=" << recv_bullet.c_playerX
+		<< ", PlayerY=" << recv_bullet.c_playerY
+		<< ", PosX=" << recv_bullet.c_targetX
+		<< ", PosY=" << recv_bullet.c_targetY << std::endl;
+
 }
 
 void sendResult(SOCKET s, int result)
@@ -302,20 +320,4 @@ int main(int argc, char* argv[])
 	// 윈속 종료
 	WSACleanup();
 	return 0;
-}
-
-void logPlayerStatus(const c_playerPacket& player)
-{
-	auto now = std::chrono::steady_clock::now();
-	auto duration = chrono::duration_cast<std::chrono::seconds>(now - lastLogTime);
-
-	if (duration.count() >= 5) { // 10초가 경과한 경우에만 로그 출력
-		std::cout << "[LOG] Player Status Updated: ID=" << player.c_playerID
-			<< ", PosX=" << player.c_playerPosX
-			<< ", PosY=" << player.c_playerPosY
-			<< std::endl;
-
-		// 마지막 로그 출력 시간 갱신
-		lastLogTime = now;
-	}
 }

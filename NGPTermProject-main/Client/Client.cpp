@@ -39,28 +39,29 @@ HWND hSendButton;   // 확인버튼
 HWND hEdit1; // 애디트 컨트롤
 HANDLE hDialogEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 
-Client client;
+extern Client client;
 
-void sendGameData(SOCKET s);
-void receiveGameData(SOCKET s);
-void receiveResult(SOCKET s);
+//void sendGameData(SOCKET s);
+//void receiveGameData(SOCKET s);
+//void receiveResult(SOCKET s);
+
 // 통신용 스레드 분리
 DWORD WINAPI clientThread(LPVOID arg)
 {
     SOCKET serverSocket = (SOCKET)arg;
     while (true) {
         // 1. 게임 데이터 수신
-        receiveGameData(serverSocket);
-
-        // 2. 결과 데이터 수신
-        receiveResult(serverSocket);
-
+        //gameframework.receiveGameData(serverSocket);
+        
         // 3. 게임 데이터 전송
-        sendGameData(serverSocket);
+        gameframework.sendGameData(serverSocket);
 
         // 4. 주기적인 딜레이 (60FPS 기준)
-       // Sleep(16);
+        Sleep(32);
     }
+    // 2. 결과 데이터 수신
+    gameframework.receiveResult(serverSocket);
+
     // 스레드 종료 시 소켓 정리
     closesocket(serverSocket);
     return 0;
@@ -111,15 +112,15 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
         // 닉네임 전송
         retval = send(sock, client.name, sizeof(client.name), 0);
         if (retval == SOCKET_ERROR) err_display("send - clientName");
+        gameframework.getPlayer()->name = client.name;
 
         // ID 할당 받기
         retval = recv(sock, (char*)&client.ID, sizeof(client.ID), 0);
         if (retval == SOCKET_ERROR) err_display("receive - clientID");
+        gameframework.getPlayer()->ID = client.ID;
     }
 
-    HANDLE th = CreateThread(NULL, 0, clientThread, (LPVOID)sock, 0, NULL);
-    if (th == NULL) closesocket(sock);
-    else CloseHandle(th);
+   
 
     // 게임 매칭 신호 전송
     unsigned short matchingStart = GAMESTART;
@@ -154,7 +155,9 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
     {
         return FALSE;
     }
-
+    HANDLE th = CreateThread(NULL, 0, clientThread, (LPVOID)sock, 0, NULL);
+    if (th == NULL) closesocket(sock);
+    else CloseHandle(th);
 
     while (true)
     {
@@ -324,64 +327,59 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return FALSE;
 }
 
-void sendGameData(SOCKET s)
-{
-    int retval;
-
-    // c_playerPacket 전송
-    //c_playerPacket playerPacket;
-    // 정보 수집 필요
-    c_playerPacket playerPacket = {};
-    strncpy_s(playerPacket.c_playerName, client.name, sizeof(playerPacket.c_playerName));
-    playerPacket.c_playerID = client.ID;
-    playerPacket.c_playerPosX = player->GetX();
-    playerPacket.c_playerPosY = gameframework.getPlayer()->GetY();
-    retval = send(s, (char*)&playerPacket, sizeof(playerPacket), 0);
-    if (retval == SOCKET_ERROR) {
-        int errorCode = WSAGetLastError();
-        std::cerr << "[ERROR] send failed. Error code: " << errorCode << std::endl;
-    }
-   
-
-    // c_bulletPacket 전송
-    c_bulletPacket bulletPacket;
-    // 정보 수집 필요
-    retval = send(s, (char*)&bulletPacket, sizeof(bulletPacket), 0);
-    if (retval == SOCKET_ERROR) err_display("receive - c_bulletPacket");
-
-   
-}
-
-void receiveGameData(SOCKET s)
-{
-    int retval;
-
-    s_enemyPacket enemyPacket;
-    retval = recv(s, (char*)&enemyPacket, sizeof(enemyPacket), 0);
-    if (retval == SOCKET_ERROR) err_display("receive - enemyPacket");
-
-    s_itemPacket itemPacket;
-    retval = recv(s, (char*)&itemPacket, sizeof(itemPacket), 0);
-    if (retval == SOCKET_ERROR) err_display("receive - itemPacket");
-
-    s_bulletPacket bulletPacket;
-    retval = recv(s, (char*)&bulletPacket, sizeof(bulletPacket), 0);
-    if (retval == SOCKET_ERROR) err_display("receive - bulletPacket");
-
-    s_obstaclePacket obstaclePacket;
-    retval = recv(s, (char*)&obstaclePacket, sizeof(obstaclePacket), 0);
-    if (retval == SOCKET_ERROR) err_display("receive - obstaclePacket");
-
-    s_playerPacket playerPacket;
-    retval = recv(s, (char*)&playerPacket, sizeof(playerPacket), 0);
-    if (retval == SOCKET_ERROR) err_display("receive - playerPacket");
-}
-
-void receiveResult(SOCKET s)
-{
-    int retval;
-
-    s_UIPacket UIPacket;
-    retval = recv(s, (char*)&UIPacket, sizeof(UIPacket), 0);
-    if (retval == SOCKET_ERROR) err_display("receive - UIPacket");
-}
+//void sendGameData(SOCKET s)
+//{
+//    int retval;
+//
+//    // c_playerPacket 전송
+//    c_playerPacket playerPacket;
+//    // 정보 수집 필요
+//    retval = send(s, (char*)&playerPacket, sizeof(playerPacket), 0);
+//    if (retval == SOCKET_ERROR) err_display("receive - c_playetPacket");
+//
+//    // c_bulletPacket 전송
+//    c_bulletPacket bulletPacket;
+//    // 정보 수집 필요
+//    retval = send(s, (char*)&bulletPacket, sizeof(bulletPacket), 0);
+//    if (retval == SOCKET_ERROR) err_display("receive - c_bulletPacket");
+//
+//    // c_inputPacket 전송
+//    c_inputPacket inputPacket;
+//    // 정보 수집 필요
+//    retval = send(s, (char*)&inputPacket, sizeof(inputPacket), 0);
+//    if (retval == SOCKET_ERROR) err_display("receive - c_inputPacket");
+//}
+//
+//void receiveGameData(SOCKET s)
+//{
+//    int retval;
+//
+//    s_enemyPacket enemyPacket;
+//    retval = recv(s, (char*)&enemyPacket, sizeof(enemyPacket), 0);
+//    if (retval == SOCKET_ERROR) err_display("receive - enemyPacket");
+//
+//    s_itemPacket itemPacket;
+//    retval = recv(s, (char*)&itemPacket, sizeof(itemPacket), 0);
+//    if (retval == SOCKET_ERROR) err_display("receive - itemPacket");
+//
+//    s_bulletPacket bulletPacket;
+//    retval = recv(s, (char*)&bulletPacket, sizeof(bulletPacket), 0);
+//    if (retval == SOCKET_ERROR) err_display("receive - bulletPacket");
+//
+//    s_obstaclePacket obstaclePacket;
+//    retval = recv(s, (char*)&obstaclePacket, sizeof(obstaclePacket), 0);
+//    if (retval == SOCKET_ERROR) err_display("receive - obstaclePacket");
+//
+//    s_playerPacket playerPacket;
+//    retval = recv(s, (char*)&playerPacket, sizeof(playerPacket), 0);
+//    if (retval == SOCKET_ERROR) err_display("receive - playerPacket");
+//}
+//
+//void receiveResult(SOCKET s)
+//{
+//    int retval;
+//
+//    s_UIPacket UIPacket;
+//    retval = recv(s, (char*)&UIPacket, sizeof(UIPacket), 0);
+//    if (retval == SOCKET_ERROR) err_display("receive - UIPacket");
+//}

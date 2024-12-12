@@ -17,7 +17,7 @@ public:
     ~Player();
 
     //ClientPlayer(SOCKET serverSocket, float x, float y, float speed, int maxHealth);
-    //void Update(SOCKET s);
+
     // 서버로 입력 전송
     void sendInputToServer(SOCKET s);
 
@@ -46,6 +46,10 @@ public:
     bool CheckCollision(float newX, float newY, const std::vector<Obstacle*>& obstacles) const;
 
     void ApplyUpgrade(const std::wstring& upgrade);
+
+    // 클라이언트 정보 추가
+    char* name;
+    unsigned short ID;
 
     float x, y;
     float speed;

@@ -282,6 +282,7 @@ void Player::SendInputToServer(const std::string& input) {
     }
 }
 */
+
 void Player::ReceiveStateFromServer(SOCKET s) {
     s_playerPacket packet;
     int retval = recv(s, (char*)&packet, sizeof(packet), 0);
