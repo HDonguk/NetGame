@@ -173,7 +173,7 @@ void sendGameData(SOCKET s)
 	std::vector<c_bulletPacket> fixedBulletPackets(fixedBulletCount);
 
 	// 기존 데이터를 복사
-	for (int i = 0; i < sharedBulletPackets.size() && i < fixedBulletCount; ++i) {
+	for (int i = 0; i < sharedBulletPackets.size() && i < fixedBulletCount; ++i) {	
 		fixedBulletPackets[i] = sharedBulletPackets[i];
 	}
 

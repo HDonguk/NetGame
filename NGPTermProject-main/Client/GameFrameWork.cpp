@@ -763,8 +763,7 @@ void GameFramework::StartCreateObstacles() {
 
 void GameFramework::FireBullet(float x, float y, float targetX, float targetY) {
     if (currentGun->FireBullet()) {
-
-        PlayGameSound(L"./resources/sounds/single_shot.wav");
+      
 
         if (dynamic_cast<Revolver*>(currentGun)) {
             bullets.push_back(new RevolverBullet(x, y, targetX, targetY));
@@ -1302,7 +1301,7 @@ void GameFramework::receiveGameData(SOCKET s)
         err_display("receive - bulletPacket");
         return;
     }
-    //UpdateBulletsFromServer(recvBullets);
+    UpdateBulletsFromServer(recvBullets);
      // c_playerPacket 데이터 수신 (3개 고정)
     std::vector<c_playerPacket> recvPlayers(3); // ID 1, 2, 3 데이터
     for (int i = 0; i < 3; ++i) {
@@ -1363,12 +1362,13 @@ void GameFramework::UpdatePlayerInfoVerMini(vector<PlayerStatusPacket> packet)
     }
 }
 void GameFramework::UpdateBulletsFromServer(const std::vector<c_bulletPacket>& packets) {
-    bullets.clear(); // 기존 총알 데이터 제거
+    //bullets.clear(); // 기존 총알 데이터 제거
 
     for (const auto& packet : packets) {
         // 수신된 패킷 데이터를 기반으로 Bullet 객체 생성
-        Bullet* newBullet = new Bullet(packet.c_playerX, packet.c_playerY, packet.c_targetY, packet.c_targetX, 0.25f,1500.0f);
-        bullets.push_back(newBullet);
+        //FireBullet(packet.c_playerX, packet.c_playerY, packet.c_targetX, packet.c_targetY);
+        firedBullet = new RevolverBullet(packet.c_playerX, packet.c_playerY, packet.c_targetX, packet.c_targetY);
+       
     }
 
     std::cout << "[LOG(Client)] Updated bullets with " << packets.size() << " new bullets." << std::endl;
