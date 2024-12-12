@@ -27,7 +27,7 @@ public:
 
     // 게임 객체 목록
     std::vector<Player> players;
-    std::vector<Enemy> enemies;
+    std::vector<Enemy*> enemies;
     std::vector<Bullet> bullets;
     std::vector<Obstacle*> obstacles;
 private:
@@ -36,6 +36,26 @@ private:
 
     bool gameRunning; // 게임 루프 실행 여부
     std::queue<Event> eventQueue; // 이벤트 큐
+
+
+    // enemy 생성함수 (보스제외)
+    void SpawnEnemy(float, Player);
+    void SpawnBrainMonster(Player);
+    void SpawnEyeMonster(Player);
+    void SpawnBigBoomer(Player);
+    void SpawnLamprey(Player);
+
+    // enemy 스폰 관련 변수
+    float enemySpawnTimer;
+    float bigBoomerSpawnTimer;
+    float lampreySpawnTimer;
+    const float enemySpawnInterval = 10.0f;
+    const float bigBoomerSpawnInterval = 30.0f;
+    const float lampreySpawnInterval = 45.0f;
+    const float yogSpawnInterval = 60.0f;
+
+    // enemy update 함수
+    void updateEnemy(float);
 
    
 

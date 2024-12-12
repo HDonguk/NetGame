@@ -40,6 +40,13 @@ void GameThread::run() {
        //cout << "updatePlayerStatus()" << endl;
        //updatePlayerStatus();
        //updateBulletStatus();
+
+        updateEnemy(0.016f);
+        for (auto player : players) {
+            SpawnEnemy(0.016f, player);
+        }
+        cout << enemies.size() << "개의 enemy spawn" << endl;
+
        Sleep(32);
    
         waitUntilNextFrame(frameStartTime);
@@ -128,3 +135,94 @@ vector<PlayerStatusPacket> GameThread::makeSendPlayerPacket()
 //    }
 //    return vector<s_playerPacket>();
 //}
+
+
+// enemy 생성
+
+void GameThread::SpawnEnemy(float frameTime, Player player) {
+    enemySpawnTimer += frameTime;
+    if (enemySpawnTimer >= enemySpawnInterval) {
+        for (int i = 0; i < 10; i++) {
+            SpawnBrainMonster(player);
+            SpawnEyeMonster(player);
+        }
+        enemySpawnTimer = 0.0f;
+    }
+
+    bigBoomerSpawnTimer += frameTime;
+    if (bigBoomerSpawnTimer >= bigBoomerSpawnInterval) {
+        SpawnBigBoomer(player);
+        SpawnBigBoomer(player);
+        SpawnBigBoomer(player);
+        bigBoomerSpawnTimer = 0.0f;
+    }
+
+    lampreySpawnTimer += frameTime;
+    if (lampreySpawnTimer >= lampreySpawnInterval) {
+        SpawnLamprey(player);
+        SpawnLamprey(player);
+        lampreySpawnTimer = 0.0f;
+    }
+}
+
+void GameThread::SpawnBrainMonster(Player player) {
+    float spawnRadius = 600.0f;
+
+    float angle = (rand() % 360) * 3.14159265358979323846 / 180.0;
+    float spawnX = player.GetX() + spawnRadius * cos(angle);
+    float spawnY = player.GetY() + spawnRadius * sin(angle);
+
+    enemies.push_back(new BrainMonster(player.GetID(), spawnX, spawnY, 5.0f));
+}
+
+void GameThread::SpawnEyeMonster(Player player) {
+    float spawnRadius = 600.0f;
+
+    float angle = (rand() % 360) * 3.14159265358979323846 / 180.0;
+    float spawnX = player.GetX() + spawnRadius * cos(angle);
+    float spawnY = player.GetY() + spawnRadius * sin(angle);
+
+    enemies.push_back(new EyeMonster(spawnX, spawnY, 5.0f));
+}
+
+void GameThread::SpawnBigBoomer(Player player) {
+    float spawnRadius = 600.0f;
+
+    float angle = (rand() % 360) * 3.14159265358979323846 / 180.0;
+    float spawnX = player.GetX() + spawnRadius * cos(angle);
+    float spawnY = player.GetY() + spawnRadius * sin(angle);
+
+    enemies.push_back(new BigBoomer(spawnX, spawnY, 5.0f));
+}
+
+void GameThread::SpawnLamprey(Player player) {
+    float spawnRadius = 600.0f;
+
+    for (int i = 0; i < 2; ++i) {
+        float angle = (rand() % 360) * 3.14159265358979323846 / 180.0;
+        float spawnX = player.GetX() + spawnRadius * cos(angle);
+        float spawnY = player.GetY() + spawnRadius * sin(angle);
+
+        enemies.push_back(new Lamprey(spawnX, spawnY, 5.0f));
+    }
+}
+
+
+void GameThread::updateEnemy(float frameTime) {
+    auto enemyIter = enemies.begin();
+    while (enemyIter != enemies.end()) {
+        Enemy* enemy = *enemyIter;
+        for (auto player : players) {
+            if (player.GetID() == enemy->GetAimPlayerID()) {
+                enemy->Update(frameTime, player.GetX(), player.GetY(), obstacles);
+            }
+        }
+        if (enemy->IsDead()) {
+            delete enemy;
+            enemyIter = enemies.erase(enemyIter);
+        }
+        else {
+            ++enemyIter;
+        }
+    }
+}
