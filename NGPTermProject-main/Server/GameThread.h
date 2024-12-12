@@ -25,7 +25,11 @@ public:
     void updatePlayerStatus();
     bool CheckCollision(const Player& player);
 
-    
+    // 게임 객체 목록
+    std::vector<Player> players;
+    std::vector<Enemy> enemies;
+    std::vector<Bullet> bullets;
+    std::vector<Obstacle*> obstacles;
 private:
     
     void waitUntilNextFrame(const std::chrono::time_point<std::chrono::steady_clock>& frameStartTime); // 프레임 간 동기화
@@ -33,11 +37,7 @@ private:
     bool gameRunning; // 게임 루프 실행 여부
     std::queue<Event> eventQueue; // 이벤트 큐
 
-    // 게임 객체 목록
-    std::vector<Player> players;
-    std::vector<Enemy> enemies;
-    std::vector<Bullet> bullets;
-    std::vector<Obstacle*> obstacles; 
+   
 
     // 패킷 생성
     vector<PlayerStatusPacket> makeSendPlayerPacket();

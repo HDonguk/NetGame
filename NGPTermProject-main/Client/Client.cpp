@@ -49,7 +49,7 @@ extern Client client;
 DWORD WINAPI clientThread(LPVOID arg)
 {
     SOCKET serverSocket = (SOCKET)arg;
-    while (true) {
+    while (true) { 
 
         // 3. 게임 데이터 전송
         gameframework.sendGameData(serverSocket);
@@ -129,24 +129,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
     retval = send(sock, (char*)&matchingStart, sizeof(matchingStart), 0);
     if (retval == SOCKET_ERROR) err_display("send - matchingStart");
 
-    // 게임 시작 신호 수신
-    //bool recvStart = false;
-    //while (!recvStart) {
-    //    s_UIPacket gameStart = {};
-    //    retval = recv(sock, (char*)&gameStart.s_UIType, sizeof(gameStart), 0);
-    //    if (retval == SOCKET_ERROR) {
-    //        err_display("receive - s_UIPacket(gameStart)");
-    //        //return;
-    //    }
-    //    if (gameStart.s_UIType != GAMESTART) {
-    //        err_display("receive - s_UIPacket(gameStart)");
-    //        //return;
-     //   }
-     //   else {
-     //       recvStart = true;
-     //   }
-
-   // }
+  
     // s_initPacket 수신
     s_initPacket initPacket = {};
     retval = recv(sock, (char*)&initPacket, sizeof(initPacket), 0);

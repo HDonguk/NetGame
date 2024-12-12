@@ -1294,10 +1294,15 @@ void GameFramework::receiveGameData(SOCKET s)
     //retval = recv(s, (char*)recv_bullets.data(), dataSize, MSG_WAITALL);
     //if (retval == SOCKET_ERROR) err_display("receive - bulletPacket");
 
-    // s_playerPacket 수신
-    s_playerPacket s_player = {};
-    retval = recv(s, (char*)&s_player, sizeof(s_playerPacket), MSG_WAITALL);
-    if (retval == SOCKET_ERROR) err_display("receive - playerPacket");
+     // c_playerPacket 데이터 수신 (3개 고정)
+    std::vector<c_playerPacket> recvPlayers(3); // ID 1, 2, 3 데이터
+    for (int i = 0; i < 3; ++i) {
+        retval = recv(s, (char*)&recvPlayers[i], sizeof(c_playerPacket), MSG_WAITALL);
+        if (retval == SOCKET_ERROR) {
+            err_display("receive - playerPacket");
+            return;
+        }
+    }
     
     //UpdatePlayerInfoVerMini(recv_players);
 

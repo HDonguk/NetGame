@@ -7,17 +7,9 @@
 #include  "list"
 #include "Client.h"
 #include<vector>
-std::vector<PlayerStatusPacket> PlayerStatus;  // 서버 패킷 리스트 선언
-std::vector<c_playerPacket> receivedPlayerPackets;
-std::vector<c_bulletPacket> receivedBulletPackets;
-std::vector<s_playerPacket> sendPlayerPackets;
-std::vector<s_bulletPacket> sendBulletPackets;
 
-vector<s_enemyPacket> enemies = {};
-vector<s_obstaclePacket> obstacles = {};
-vector<s_bulletPacket> Sendbullets = {};
-vector<s_itemPacket> items = {};
-vector<s_playerPacket> sendPlayers = {};
+//std::vector<c_playerPacket> sharedPlayerPackets;
+std::vector<c_bulletPacket> sharedBulletPackets = {};
 extern CRITICAL_SECTION cs;         // Critical Section 전역 변수 정의
 // 30FPS 기준
 #define FRAME_TIME 0.033f
@@ -46,55 +38,55 @@ void GameThread::run() {
     //2. updateBullet
     //3. collisionAction
        //cout << "updatePlayerStatus()" << endl;
-       updatePlayerStatus();
+       //updatePlayerStatus();
        //updateBulletStatus();
        Sleep(32);
    
         waitUntilNextFrame(frameStartTime);
     }
 }
-
-void GameThread::updatePlayerStatus() {
-    EnterCriticalSection(&cs); // 동기화
-    for (const auto& c_player : receivedPlayerPackets) {
-        s_playerPacket s_player = {};
-        s_player.s_playerID = c_player.c_playerID;
-        s_player.s_playerPosX = c_player.c_playerPosX;
-        s_player.s_playerPosY = c_player.c_playerPosY;
-
-        
-        sendPlayers.push_back(s_player); // 전역 벡터에 추가
-        std::cout 
-            << "[LOG(GameTread)] ID=" << s_player.s_playerID
-            << ", PosX=" << s_player.s_playerPosX
-            << ", PosY=" << s_player.s_playerPosY << std::endl;
-        
-    }
-    receivedPlayerPackets.clear(); // 처리한 데이터
-    LeaveCriticalSection(&cs); // 동기화 해제
-}
-
-void GameThread::updateBulletStatus()
-{
-    EnterCriticalSection(&cs); // 동기화
-    for (const auto& c_bullet : receivedBulletPackets) {
-        s_bulletPacket s_bullet = {};
-        s_bullet.s_playerX = c_bullet.c_playerX;
-        s_bullet.s_playerY = c_bullet.c_playerY;
-        s_bullet.s_targetX = c_bullet.c_targetX;
-        s_bullet.s_targetY = c_bullet.c_targetY;
-
-        // 업데이트된 s_bulletPacket을 bullets 벡터에 추가
-        Sendbullets.push_back(s_bullet);
-
-        std::cout << "[LOG(GameThread)] Bullet Packet Received: PlayerX=" << s_bullet.s_playerX
-            << ", PlayerY=" << s_bullet.s_playerY
-            << ", DirX=" << s_bullet.s_targetX
-            << ", DirY=" << s_bullet.s_targetY << std::endl;
-    }
-    receivedBulletPackets.clear(); // 처리한 데이터 제거
-    LeaveCriticalSection(&cs); // 동기화 해제
-}
+//
+//id GameThread::updatePlayerStatus() {
+//  EnterCriticalSection(&cs); // 동기화
+//  for (const auto& c_player : receivedPlayerPackets) {
+//      s_playerPacket s_player = {};
+//      s_player.s_playerID = c_player.c_playerID;
+//      s_player.s_playerPosX = c_player.c_playerPosX;
+//      s_player.s_playerPosY = c_player.c_playerPosY;
+//
+//      
+//      sendPlayers.push_back(s_player); // 전역 벡터에 추가
+//      std::cout 
+//          << "[LOG(GameTread)] ID=" << s_player.s_playerID
+//          << ", PosX=" << s_player.s_playerPosX
+//          << ", PosY=" << s_player.s_playerPosY << std::endl;
+//      
+//  }
+//  receivedPlayerPackets.clear(); // 처리한 데이터
+//  LeaveCriticalSection(&cs); // 동기화 해제
+//
+//
+//id GameThread::updateBulletStatus()
+//
+//  EnterCriticalSection(&cs); // 동기화
+//  for (const auto& c_bullet : receivedBulletPackets) {
+//      s_bulletPacket s_bullet = {};
+//      s_bullet.s_playerX = c_bullet.c_playerX;
+//      s_bullet.s_playerY = c_bullet.c_playerY;
+//      s_bullet.s_targetX = c_bullet.c_targetX;
+//      s_bullet.s_targetY = c_bullet.c_targetY;
+//
+//      // 업데이트된 s_bulletPacket을 bullets 벡터에 추가
+//      Sendbullets.push_back(s_bullet);
+//
+//      std::cout << "[LOG(GameThread)] Bullet Packet Received: PlayerX=" << s_bullet.s_playerX
+//          << ", PlayerY=" << s_bullet.s_playerY
+//          << ", DirX=" << s_bullet.s_targetX
+//          << ", DirY=" << s_bullet.s_targetY << std::endl;
+//  }
+//  receivedBulletPackets.clear(); // 처리한 데이터 제거
+//  LeaveCriticalSection(&cs); // 동기화 해제
+//
 
 
 
